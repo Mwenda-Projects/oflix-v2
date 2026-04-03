@@ -91,7 +91,7 @@ export default function OnboardingPage() {
 
         {/* Progress */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 32 }}>
-          {STEPS.map((s, i) => (
+          {STEPS.map((_s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
               <div style={{
                 width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
@@ -272,14 +272,14 @@ export default function OnboardingPage() {
           {step < 3 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
               <button
-                onClick={() => setStep(s => s - 1)}
+                onClick={() => setStep(prev => prev - 1)}
                 disabled={step === 0}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 9, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,100,220,0.15)', background: 'transparent', color: isDark ? '#555' : '#8090c0', fontSize: 13, fontWeight: 500, cursor: step === 0 ? 'not-allowed' : 'pointer', opacity: step === 0 ? 0.3 : 1, fontFamily: "'DM Sans', sans-serif" }}
               >
                 <ArrowLeft size={14} /> {t('Back', 'Rudi')}
               </button>
               <button
-                onClick={() => setStep(s => s + 1)}
+                onClick={() => setStep(prev => prev + 1)}
                 disabled={!canProceed()}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: 9, border: 'none', background: canProceed() ? 'linear-gradient(135deg, #0A84FF, #0066CC)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'), color: canProceed() ? 'white' : (isDark ? '#444' : '#bbb'), fontSize: 13, fontWeight: 600, cursor: canProceed() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif", boxShadow: canProceed() ? '0 4px 14px rgba(10,132,255,0.3)' : 'none', transition: 'all 0.2s' }}
               >
