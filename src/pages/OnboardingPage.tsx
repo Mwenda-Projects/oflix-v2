@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { ArrowRight, ArrowLeft, Check, MapPin, MessageCircle, Store } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import { useTheme } from '@/context/ThemeContext'
+import { createBusiness } from '@/lib/db'
+import { useNavigate } from 'react-router-dom'
 
 const CATEGORIES = [
   { id: 'retail', emoji: '🛍️', en: 'Retail Shop', sw: 'Duka la Bidhaa' },
@@ -48,8 +50,33 @@ const empty: FormData = {
 export default function OnboardingPage() {
   const { t } = useLanguage()
   const { isDark } = useTheme()
+  const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormData>(empty)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const handleBuild = async () => {
+    setSaving(true)
+    setSaveError(null)
+    const { error } = await createBusiness({
+      name: form.businessName,
+      category: form.category,
+      description: form.description,
+      phone: form.phone,
+      whatsapp: form.whatsapp,
+      address: form.address,
+      googleMapsUrl: form.googleMapsUrl,
+      hours: form.hours,
+    })
+    if (error) {
+      setSaveError(t('Could not save. Please try again.', 'Haiwezekani kuhifadhi. Jaribu tena.'))
+      setSaving(false)
+    } else {
+      setStep(prev => prev + 1)
+      setSaving(false)
+    }
+  }
 
   const selectedCategory = CATEGORIES.find(c => c.id === form.category)
 
@@ -262,13 +289,20 @@ export default function OnboardingPage() {
               <a
                 href="/dashboard"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 11, background: 'linear-gradient(135deg, #0A84FF, #0066CC)', color: 'white', textDecoration: 'none', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 20px rgba(10,132,255,0.35)' }}
+                onClick={() => navigate('/dashboard')}
               >
-                {t('View my website', 'Angalia tovuti yangu')} <ArrowRight size={15} />
+                {t('Go to my dashboard', 'Nenda kwenye dashibodi yangu')} <ArrowRight size={15} />
               </a>
             </div>
           )}
 
           {/* Navigation */}
+          {saveError && (
+            <div style={{ margin: '16px 0 0', padding: '11px 14px', borderRadius: 9, background: 'rgba(255,69,58,0.08)', border: '1px solid rgba(255,69,58,0.2)', fontSize: 13, color: '#FF453A' }}>
+              {saveError}
+            </div>
+          )}
+
           {step < 3 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
               <button
@@ -279,11 +313,11 @@ export default function OnboardingPage() {
                 <ArrowLeft size={14} /> {t('Back', 'Rudi')}
               </button>
               <button
-                onClick={() => setStep(prev => prev + 1)}
-                disabled={!canProceed()}
+                onClick={() => step === 2 ? handleBuild() : setStep(prev => prev + 1)}
+                disabled={!canProceed() || saving}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: 9, border: 'none', background: canProceed() ? 'linear-gradient(135deg, #0A84FF, #0066CC)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'), color: canProceed() ? 'white' : (isDark ? '#444' : '#bbb'), fontSize: 13, fontWeight: 600, cursor: canProceed() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif", boxShadow: canProceed() ? '0 4px 14px rgba(10,132,255,0.3)' : 'none', transition: 'all 0.2s' }}
               >
-                {step === 2 ? t('Build my website', 'Jenga tovuti yangu') : t('Continue', 'Endelea')} <ArrowRight size={14} />
+                {step === 2 ? (saving ? t('Building...', 'Inajenga...') : t('Build my website', 'Jenga tovuti yangu')) : t('Continue', 'Endelea')} <ArrowRight size={14} />
               </button>
             </div>
           )}

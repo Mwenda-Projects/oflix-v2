@@ -112,7 +112,7 @@ const tiers = [
 ]
 
 export default function Pricing() {
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
 
   return (
     <section id="pricing" className="py-24 px-6">
@@ -174,7 +174,7 @@ export default function Pricing() {
 
               {/* Features */}
               <ul className="space-y-2.5 mb-8">
-                {(language === 'sw' ? tier.sw.features : tier.en.features).map((feature: string) => (
+                {t(tier.en.features, tier.sw.features).map((feature: string) => (
                   <li key={feature} className="flex items-start gap-2.5">
                     <Check size={14} className={tier.highlight ? 'text-white mt-0.5 shrink-0' : 'text-accent-green mt-0.5 shrink-0'} />
                     <span className={`font-body text-sm leading-snug ${tier.highlight ? 'text-white' : 'text-light-text dark:text-dark-text'}`}>
