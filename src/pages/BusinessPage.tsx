@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import {
   MessageCircle, MapPin, Phone, Clock, Mail,
   Wrench, Scissors, UtensilsCrossed, Stethoscope,
@@ -397,7 +397,7 @@ export default function BusinessPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {cat.services.map((service, i) => (
+            {cat.services.map((service) => (
               <div key={service} style={{ padding: '22px 20px', borderRadius: 14, background: 'white', border: '1px solid #EFEFEF', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', transition: 'transform 0.2s, box-shadow 0.2s' }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'
