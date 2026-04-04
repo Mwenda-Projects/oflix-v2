@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ArrowRight, ArrowLeft, Check, MapPin, MessageCircle, Store } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import { useTheme } from '@/context/ThemeContext'
-import { createBusiness } from '@/lib/db'
+import { createBusiness, updateBusiness } from '@/lib/db'
 import { useNavigate } from 'react-router-dom'
 
 const CATEGORIES = [
@@ -47,6 +47,82 @@ const empty: FormData = {
   hours: '',
 }
 
+// ── AI generation ─────────────────────────────────────────────
+async function generateWebsite(business: {
+  name: string
+  category: string
+  description: string
+  phone: string
+  whatsapp?: string
+  address: string
+  hours?: string
+}): Promise<string> {
+
+  const categoryStyles: Record<string, string> = {
+    food:         'warm and appetising — deep amber, cream, forest green. Hero with big food feel, menu highlights, hours, WhatsApp order button.',
+    salon:        'elegant and luxurious — rose gold, soft blush, charcoal. Hero, services list, hours, WhatsApp booking button.',
+    clinic:       'clean and trustworthy — white, calm blue, soft green. Hero, services, hours, WhatsApp appointment button.',
+    retail:       'bold and modern — vibrant accent on white. Hero, featured products, hours, WhatsApp inquiry button.',
+    school:       'inspiring and professional — navy, gold, white. Hero, courses, why choose us, WhatsApp enrollment button.',
+    transport:    'strong and reliable — dark navy, orange accent. Hero, routes/services, WhatsApp booking button.',
+    construction: 'industrial and trustworthy — dark grey, yellow. Hero, services, WhatsApp quote button.',
+    agriculture:  'natural and earthy — green, brown, cream. Hero, products, WhatsApp order button.',
+    tech:         'modern and minimal — dark background, electric blue. Hero, services, WhatsApp button.',
+    other:        'clean and professional — white with strong colour accent. Hero, about, services, WhatsApp button.',
+  }
+
+  const style = categoryStyles[business.category] || categoryStyles.other
+  const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
+  const whatsappLink = `https://wa.me/${whatsappNumber}`
+
+  const prompt = `You are a world-class web designer. Build a complete, stunning, mobile-first single-page website for a real Nairobi business.
+
+BUSINESS DETAILS:
+- Name: ${business.name}
+- Type: ${business.category}
+- Description: ${business.description}
+- Phone: ${business.phone}
+- WhatsApp: ${whatsappLink}
+- Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
+
+DESIGN DIRECTION:
+${style}
+
+STRICT RULES:
+1. Return ONLY raw HTML — no markdown, no backticks, no explanation.
+2. Complete single file with <html>, <head> with Google Fonts, all CSS in <style>, all JS in <script>.
+3. Mobile-first. Looks perfect on a phone.
+4. Use the EXACT business name, description, phone and address above — no placeholders.
+5. WhatsApp button must open: ${whatsappLink}
+6. Phone must link to: tel:${business.phone}
+7. At least 4 sections: Hero, Services/About, Contact, Call-to-action.
+8. Smooth scroll and subtle CSS animations.
+9. Small "Powered by OfliX" in the footer linking to https://oflix.co.ke
+10. Must look like a KES 50,000 website — not a template, not a business card.`
+
+  const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || 'Generation failed')
+  }
+
+  const data = await response.json()
+  const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
+  if (!html) throw new Error('No website was generated')
+
+  return html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim()
+}
+
+// ── Component ─────────────────────────────────────────────────
 export default function OnboardingPage() {
   const { t } = useLanguage()
   const { isDark } = useTheme()
@@ -55,26 +131,60 @@ export default function OnboardingPage() {
   const [form, setForm] = useState<FormData>(empty)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [buildStatus, setBuildStatus] = useState<string>('')
 
   const handleBuild = async () => {
     setSaving(true)
     setSaveError(null)
-    const { error } = await createBusiness({
-      name: form.businessName,
-      category: form.category,
-      description: form.description,
-      phone: form.phone,
-      whatsapp: form.whatsapp,
-      address: form.address,
-      googleMapsUrl: form.googleMapsUrl,
-      hours: form.hours,
-    })
-    if (error) {
-      setSaveError(t('Could not save. Please try again.', 'Haiwezekani kuhifadhi. Jaribu tena.'))
-      setSaving(false)
-    } else {
+    setBuildStatus(t('Saving your business details...', 'Kuhifadhi maelezo ya biashara yako...'))
+
+    try {
+      // 1. Save business to Supabase
+      const { data: biz, error } = await createBusiness({
+        name: form.businessName,
+        category: form.category,
+        description: form.description,
+        phone: form.phone,
+        whatsapp: form.whatsapp,
+        address: form.address,
+        googleMapsUrl: form.googleMapsUrl,
+        hours: form.hours,
+      })
+
+      if (error || !biz) {
+        setSaveError(t('Could not save. Please try again.', 'Haiwezekani kuhifadhi. Jaribu tena.'))
+        setSaving(false)
+        setBuildStatus('')
+        return
+      }
+
+      // 2. Generate the website with AI
+      setBuildStatus(t('Building your website with AI — this takes about 30 seconds...', 'Kuunda tovuti yako kwa AI — hii inachukua sekunde 30...'))
+      const html = await generateWebsite({
+        name: form.businessName,
+        category: form.category,
+        description: form.description,
+        phone: form.phone,
+        whatsapp: form.whatsapp,
+        address: form.address,
+        hours: form.hours,
+      })
+
+      // 3. Save the generated HTML to Supabase
+      setBuildStatus(t('Finishing up...', 'Inamaliza...'))
+      await updateBusiness(biz.id, { generated_html: html } as any)
+
+      // 4. Done!
       setStep(prev => prev + 1)
+
+    } catch (err) {
+      setSaveError(t(
+        'Could not generate your website. Please try again.',
+        'Haiwezekani kuunda tovuti yako. Jaribu tena.'
+      ))
+    } finally {
       setSaving(false)
+      setBuildStatus('')
     }
   }
 
@@ -262,12 +372,12 @@ export default function OnboardingPage() {
                 <Check size={28} color="#30D158" />
               </div>
               <h2 style={{ fontSize: 24, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", marginBottom: 10 }}>
-                {t('Your website is being built!', 'Tovuti yako inaundwa!')}
+                {t('Your website is ready!', 'Tovuti yako iko tayari!')}
               </h2>
               <p style={{ fontSize: 14, color: isDark ? '#666' : '#8090c0', lineHeight: 1.7, marginBottom: 8 }}>
                 {t(
-                  'OfliX is putting together your professional website right now.',
-                  'OfliX inaunda tovuti yako ya kitaalamu sasa hivi.'
+                  'OfliX has built your professional website. Go to your dashboard to view and share it.',
+                  'OfliX imeunda tovuti yako ya kitaalamu. Nenda kwenye dashibodi yako kuona na kushiriki.'
                 )}
               </p>
               <div style={{ background: isDark ? 'rgba(10,132,255,0.08)' : 'rgba(10,100,220,0.05)', border: isDark ? '1px solid rgba(10,132,255,0.2)' : '1px solid rgba(10,100,220,0.15)', borderRadius: 10, padding: '14px 18px', margin: '20px 0', textAlign: 'left' }}>
@@ -296,28 +406,41 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Navigation */}
+          {/* Building status message */}
+          {saving && buildStatus && (
+            <div style={{ margin: '16px 0 0', padding: '11px 14px', borderRadius: 9, background: isDark ? 'rgba(10,132,255,0.08)' : 'rgba(10,100,220,0.05)', border: isDark ? '1px solid rgba(10,132,255,0.2)' : '1px solid rgba(10,100,220,0.15)', fontSize: 13, color: '#0A84FF', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', border: '2px solid #0A84FF', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+              {buildStatus}
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
+
+          {/* Error message */}
           {saveError && (
             <div style={{ margin: '16px 0 0', padding: '11px 14px', borderRadius: 9, background: 'rgba(255,69,58,0.08)', border: '1px solid rgba(255,69,58,0.2)', fontSize: 13, color: '#FF453A' }}>
               {saveError}
             </div>
           )}
 
+          {/* Navigation */}
           {step < 3 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
               <button
                 onClick={() => setStep(prev => prev - 1)}
-                disabled={step === 0}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 9, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,100,220,0.15)', background: 'transparent', color: isDark ? '#555' : '#8090c0', fontSize: 13, fontWeight: 500, cursor: step === 0 ? 'not-allowed' : 'pointer', opacity: step === 0 ? 0.3 : 1, fontFamily: "'DM Sans', sans-serif" }}
+                disabled={step === 0 || saving}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 9, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,100,220,0.15)', background: 'transparent', color: isDark ? '#555' : '#8090c0', fontSize: 13, fontWeight: 500, cursor: (step === 0 || saving) ? 'not-allowed' : 'pointer', opacity: (step === 0 || saving) ? 0.3 : 1, fontFamily: "'DM Sans', sans-serif" }}
               >
                 <ArrowLeft size={14} /> {t('Back', 'Rudi')}
               </button>
               <button
                 onClick={() => step === 2 ? handleBuild() : setStep(prev => prev + 1)}
                 disabled={!canProceed() || saving}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: 9, border: 'none', background: canProceed() ? 'linear-gradient(135deg, #0A84FF, #0066CC)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'), color: canProceed() ? 'white' : (isDark ? '#444' : '#bbb'), fontSize: 13, fontWeight: 600, cursor: canProceed() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif", boxShadow: canProceed() ? '0 4px 14px rgba(10,132,255,0.3)' : 'none', transition: 'all 0.2s' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: 9, border: 'none', background: canProceed() && !saving ? 'linear-gradient(135deg, #0A84FF, #0066CC)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'), color: canProceed() && !saving ? 'white' : (isDark ? '#444' : '#bbb'), fontSize: 13, fontWeight: 600, cursor: canProceed() && !saving ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif", boxShadow: canProceed() && !saving ? '0 4px 14px rgba(10,132,255,0.3)' : 'none', transition: 'all 0.2s' }}
               >
-                {step === 2 ? (saving ? t('Building...', 'Inajenga...') : t('Build my website', 'Jenga tovuti yangu')) : t('Continue', 'Endelea')} <ArrowRight size={14} />
+                {step === 2
+                  ? (saving ? t('Building your website...', 'Inajenga tovuti yako...') : t('Build my website', 'Jenga tovuti yangu'))
+                  : t('Continue', 'Endelea')}
+                {!saving && <ArrowRight size={14} />}
               </button>
             </div>
           )}
