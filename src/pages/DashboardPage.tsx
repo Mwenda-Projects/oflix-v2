@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Globe, MessageCircle, MapPin, Eye, Settings, LogOut, Moon, Sun, TrendingUp, ExternalLink, Plus } from 'lucide-react'
+import {
+  Globe, MessageCircle, MapPin, Eye,
+  LogOut, Moon, Sun, ExternalLink, 
+  Copy, CheckCheck, Sparkles, BarChart2,
+  Settings, Share2,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useAuth } from '@/context/AuthContext'
 import { getMyBusiness, getLeadStats } from '@/lib/db'
 import type { Business } from '@/lib/db'
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  retail: '🛍️', food: '🍽️', salon: '💇', clinic: '🏥',
+  school: '📚', transport: '🚌', construction: '🏗️',
+  agriculture: '🌾', tech: '💻', other: '✨',
+}
 
 export default function DashboardPage() {
   const { isDark, toggleTheme } = useTheme()
@@ -16,6 +27,8 @@ export default function DashboardPage() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [stats, setStats] = useState({ pageViews: 0, whatsappTaps: 0, directionsTaps: 0 })
   const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
+  const [activeNav, setActiveNav] = useState('overview')
 
   useEffect(() => {
     const load = async () => {
@@ -35,41 +48,81 @@ export default function DashboardPage() {
     navigate('/')
   }
 
-  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || t('there', 'wewe')
-  const websiteUrl = business ? `${window.location.origin}/b/${business.slug}` : null
-
-  const card: React.CSSProperties = {
-    background: isDark ? 'rgba(255,255,255,0.03)' : 'white',
-    border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)',
-    borderRadius: 14,
-    boxShadow: isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.05)',
+  const handleCopy = () => {
+    navigator.clipboard.writeText(websiteUrl || '').catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: isDark ? '#0A0A0B' : '#F7F7F5', fontFamily: "'DM Sans', sans-serif" }}>
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || t('there', 'wewe')
+  const websiteUrl = business ? `${window.location.origin}/b/${business.slug}` : null
+  const emoji = business ? (CATEGORY_EMOJI[business.category] || '✨') : '🏪'
 
-      {/* Sidebar */}
-      <aside style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', background: isDark ? 'rgba(14,15,20,0.97)' : 'rgba(255,255,255,0.97)', borderRight: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)', position: 'sticky', top: 0, height: '100vh', backdropFilter: 'blur(20px)' }}>
+  // ── Theme tokens ─────────────────────────────────────────────
+  const sidebarBg = '#1A1A1A'
+  const mainBg = isDark ? '#0F1011' : '#F6F6F7'
+  const surface = isDark ? '#1C1C1E' : '#FFFFFF'
+  const border = isDark ? '#2A2A2A' : '#E1E3E5'
+  const textPrimary = isDark ? '#F5F5F7' : '#1A1A1A'
+  const textMuted = isDark ? '#666' : '#6D7175'
+  const accent = '#008060'
+
+  const navItems = [
+    { id: 'overview', label: t('Overview', 'Muhtasari'), icon: BarChart2 },
+    { id: 'website', label: t('My Website', 'Tovuti Yangu'), icon: Globe, action: () => websiteUrl && window.open(websiteUrl, '_blank') },
+    { id: 'settings', label: t('Settings', 'Mipangilio'), icon: Settings },
+  ]
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', background: mainBg, fontFamily: "'DM Sans', sans-serif" }}>
+
+      {/* ── Sidebar ─────────────────────────────────────────── */}
+      <aside style={{
+        width: 220, flexShrink: 0,
+        background: sidebarBg,
+        display: 'flex', flexDirection: 'column',
+        position: 'sticky', top: 0, height: '100vh',
+      }}>
 
         {/* Logo */}
-        <div style={{ padding: '18px 16px 14px', borderBottom: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)' }}>
+        <div style={{ padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 10px rgba(10,132,255,0.4)' }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 7,
+              background: accent,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
               <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 14 }}>O</span>
             </div>
-            <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1D1D1F' }}>OfliX</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'white', letterSpacing: '-0.3px' }}>OfliX</span>
           </Link>
         </div>
 
-        {/* Business status */}
+        {/* Business pill */}
         {business && (
-          <div style={{ padding: '12px 14px', borderBottom: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 9, background: isDark ? 'rgba(10,132,255,0.08)' : 'rgba(10,100,220,0.06)', border: isDark ? '1px solid rgba(10,132,255,0.15)' : '1px solid rgba(10,100,220,0.1)' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #0A84FF, #BF5AF2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: 14 }}>🏪</span>
+          <div style={{ padding: '10px 10px 4px' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 11px',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: 8,
+            }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: 7,
+                background: `linear-gradient(135deg, ${accent}, #004C3F)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, flexShrink: 0,
+              }}>
+                {emoji}
               </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#E5E5E7' : '#1D1D1F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{business.name}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{
+                  fontSize: 12, fontWeight: 600, color: 'white',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {business.name}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#30D158' }} />
                   <span style={{ fontSize: 10, color: '#30D158', fontWeight: 600 }}>{t('Live', 'Hai')}</span>
@@ -80,137 +133,391 @@ export default function DashboardPage() {
         )}
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '10px 8px' }}>
-          {[
-            { label: t('Dashboard', 'Dashibodi'), icon: TrendingUp },
-            { label: t('My Website', 'Tovuti Yangu'), icon: Globe, action: () => websiteUrl && window.open(websiteUrl, '_blank') },
-            { label: t('Settings', 'Mipangilio'), icon: Settings },
-          ].map(item => (
-            <button key={item.label} onClick={item.action} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 7, marginBottom: 1, border: 'none', fontSize: 13, color: isDark ? '#666' : '#888', background: 'transparent', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.15s' }}>
-              <item.icon size={13} />
+        <nav style={{ flex: 1, padding: '8px' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '10px 8px 4px' }}>
+            {t('Main', 'Kuu')}
+          </div>
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => { setActiveNav(item.id); item.action?.() }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 9px', borderRadius: 7, marginBottom: 1,
+                border: 'none', fontSize: 13,
+                background: activeNav === item.id ? `rgba(0,128,96,0.2)` : 'transparent',
+                color: activeNav === item.id ? '#34D399' : 'rgba(255,255,255,0.45)',
+                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.15s', textAlign: 'left',
+              }}
+            >
+              <item.icon size={14} />
               {item.label}
             </button>
           ))}
         </nav>
 
         {/* Bottom */}
-        <div style={{ padding: '8px 8px 10px', borderTop: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.06)' }}>
-          <button onClick={toggleLanguage} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '6px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: isDark ? '#555' : '#aaa', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <button
+            onClick={toggleLanguage}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif' " }}
+          >
             🌐 {language === 'en' ? 'Kiswahili' : 'English'}
           </button>
-          <button onClick={toggleTheme} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '6px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: isDark ? '#555' : '#aaa', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}>
+          <button
+            onClick={toggleTheme}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}
+          >
             {isDark ? <Sun size={12} /> : <Moon size={12} />}
-            {isDark ? t('Light mode', 'Hali ya mwanga') : t('Dark mode', 'Hali ya giza')}
+            {isDark ? t('Light mode', 'Mwanga') : t('Dark mode', 'Giza')}
           </button>
-          <button onClick={handleSignOut} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '6px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: isDark ? '#555' : '#aaa', fontFamily: "'DM Sans', sans-serif" }}>
+          <button
+            onClick={handleSignOut}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}
+          >
             <LogOut size={12} /> {t('Sign out', 'Toka')}
           </button>
         </div>
       </aside>
 
-      {/* Main */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '40px 36px 60px' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      {/* ── Main content ─────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
-          {/* Header */}
-          <div style={{ marginBottom: 32 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#0A84FF', marginBottom: 6 }}>
-              {t('Dashboard', 'Dashibodi')}
-            </p>
-            <h1 style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1D1D1F', letterSpacing: '-0.3px', marginBottom: 4 }}>
+        {/* Top bar */}
+        <div style={{
+          background: surface,
+          borderBottom: `1px solid ${border}`,
+          padding: '12px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'sticky', top: 0, zIndex: 10,
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>
+            {t('Overview', 'Muhtasari')}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {websiteUrl && (
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`${t('Check out my business online', 'Angalia biashara yangu mtandaoni')}: ${websiteUrl}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '7px 14px', borderRadius: 7,
+                  border: `1px solid ${border}`,
+                  background: surface, color: textPrimary,
+                  textDecoration: 'none', fontSize: 13, fontWeight: 500,
+                }}
+              >
+                <Share2 size={13} />
+                {t('Share', 'Shiriki')}
+              </a>
+            )}
+            {websiteUrl && (
+              <a
+                href={websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '7px 14px', borderRadius: 7,
+                  border: 'none', background: accent,
+                  color: 'white', textDecoration: 'none',
+                  fontSize: 13, fontWeight: 600,
+                }}
+              >
+                <ExternalLink size={13} />
+                {t('View website', 'Angalia tovuti')}
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Page content */}
+        <main style={{ flex: 1, padding: '28px 28px 60px', maxWidth: 860, width: '100%', margin: '0 auto' }}>
+
+          {/* Greeting */}
+          <div style={{ marginBottom: 24 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px', marginBottom: 4 }}>
               {t(`Good day, ${firstName} 👋`, `Habari, ${firstName} 👋`)}
             </h1>
-            <p style={{ fontSize: 14, color: isDark ? '#555' : '#8090c0' }}>
+            <p style={{ fontSize: 14, color: textMuted }}>
               {business
-                ? t("Here's how your business is doing online.", 'Hivi ndivyo biashara yako inavyofanya mtandaoni.')
+                ? t("Here's how your business is doing online today.", 'Hivi ndivyo biashara yako inavyofanya leo.')
                 : t("Let's get your business online.", 'Hebu tuweke biashara yako mtandaoni.')}
             </p>
           </div>
 
           {loading ? (
+            // Skeleton
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[1,2,3].map(i => <div key={i} style={{ ...card, height: 80, padding: 20 }} />)}
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{
+                  height: 80, borderRadius: 10,
+                  background: isDark ? '#1C1C1E' : '#EBEBEB',
+                  animation: 'pulse 1.5s ease infinite',
+                }} />
+              ))}
             </div>
+
           ) : !business ? (
-            /* No business yet */
-            <div style={{ ...card, padding: '48px 32px', textAlign: 'center' }}>
-              <p style={{ fontSize: 40, marginBottom: 16 }}>🏪</p>
-              <h2 style={{ fontSize: 22, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1D1D1F', fontFamily: "'Playfair Display', serif", marginBottom: 8 }}>
+            // No business state
+            <div style={{
+              background: surface, border: `1px solid ${border}`,
+              borderRadius: 10, padding: '48px 32px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🏪</div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: textPrimary, marginBottom: 8 }}>
                 {t("You don't have a website yet", 'Bado huna tovuti')}
               </h2>
-              <p style={{ fontSize: 14, color: isDark ? '#555' : '#8090c0', marginBottom: 28, lineHeight: 1.6 }}>
-                {t('Set up your business profile and get a professional website in minutes.', 'Sanidi wasifu wa biashara yako na upate tovuti ya kitaalamu kwa dakika chache.')}
+              <p style={{ fontSize: 14, color: textMuted, marginBottom: 28, lineHeight: 1.6 }}>
+                {t(
+                  'Chat with our AI assistant and get a professional website in 2 minutes.',
+                  'Zungumza na msaidizi wetu wa AI na upate tovuti ya kitaalamu kwa dakika 2.'
+                )}
               </p>
-              <Link to="/onboarding" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 24px', borderRadius: 11, background: 'linear-gradient(135deg, #0A84FF, #0066CC)', color: 'white', textDecoration: 'none', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 20px rgba(10,132,255,0.35)' }}>
-                <Plus size={16} /> {t('Set up my business', 'Sanidi biashara yangu')}
+              <Link
+                to="/onboarding"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '12px 24px', borderRadius: 8,
+                  background: accent, color: 'white',
+                  textDecoration: 'none', fontSize: 14, fontWeight: 600,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                <Sparkles size={16} />
+                {t('Build my website', 'Jenga tovuti yangu')}
               </Link>
             </div>
+
           ) : (
             <>
-              {/* Website URL */}
-              <div style={{ ...card, padding: '16px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(10,132,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Globe size={18} color="#0A84FF" />
+              {/* Live alert */}
+              <div style={{
+                background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5',
+                border: `1px solid ${isDark ? 'rgba(0,128,96,0.25)' : '#B3D9CC'}`,
+                borderRadius: 10,
+                padding: '14px 18px',
+                display: 'flex', alignItems: 'center', gap: 14,
+                marginBottom: 20,
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  background: accent,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Globe size={16} color="white" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 11, color: isDark ? '#555' : '#aaa', marginBottom: 2 }}>{t('Your website is live at', 'Tovuti yako iko hai kwenye')}</p>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#0A84FF', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 2 }}>
+                    {t('Your website is live!', 'Tovuti yako iko hai!')}
+                  </div>
+                  <div style={{ fontSize: 12, color: accent, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {websiteUrl}
-                  </p>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => { navigator.clipboard.writeText(websiteUrl || '').catch(() => {}) }} style={{ padding: '7px 14px', borderRadius: 8, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,100,220,0.15)', background: 'transparent', color: isDark ? '#888' : '#6080cc', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                    {t('Copy', 'Nakili')}
-                  </button>
-                  <a href={websiteUrl || '#'} target="_blank" rel="noopener noreferrer" style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #0A84FF, #0066CC)', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, fontFamily: "'DM Sans', sans-serif" }}>
-                    <ExternalLink size={12} /> {t('View', 'Angalia')}
-                  </a>
-                </div>
+                <button
+                  onClick={handleCopy}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '7px 14px', borderRadius: 7,
+                    border: `1px solid ${border}`,
+                    background: surface, color: textPrimary,
+                    fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                    fontFamily: "'DM Sans', sans-serif", flexShrink: 0,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {copied ? <CheckCheck size={13} color={accent} /> : <Copy size={13} />}
+                  {copied ? t('Copied!', 'Imenakiliwa!') : t('Copy link', 'Nakili')}
+                </button>
               </div>
 
-              {/* Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+              {/* Stats grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
                 {[
-                  { label: t('Page Views', 'Maoni ya Ukurasa'), value: stats.pageViews, icon: Eye, color: '#0A84FF' },
-                  { label: t('WhatsApp Taps', 'Mabonyezo ya WhatsApp'), value: stats.whatsappTaps, icon: MessageCircle, color: '#25D366' },
-                  { label: t('Directions Taps', 'Mabonyezo ya Mwelekeo'), value: stats.directionsTaps, icon: MapPin, color: '#FF9F0A' },
+                  {
+                    label: t('Visitors today', 'Wageni leo'),
+                    value: stats.pageViews,
+                    icon: Eye,
+                    color: accent,
+                    lightBg: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5',
+                    trend: t('Total page views', 'Jumla ya maoni'),
+                  },
+                  {
+                    label: t('WhatsApp taps', 'Mabonyezo ya WhatsApp'),
+                    value: stats.whatsappTaps,
+                    icon: MessageCircle,
+                    color: '#25D366',
+                    lightBg: isDark ? 'rgba(37,211,102,0.08)' : '#F0FBF4',
+                    trend: t('People who messaged you', 'Watu waliokutumia ujumbe'),
+                  },
+                  {
+                    label: t('Directions taps', 'Mabonyezo ya Mwelekeo'),
+                    value: stats.directionsTaps,
+                    icon: MapPin,
+                    color: '#FF9F0A',
+                    lightBg: isDark ? 'rgba(255,159,10,0.08)' : '#FFF8EE',
+                    trend: t('People coming to you', 'Watu wanaokuja kwako'),
+                  },
                 ].map(stat => (
-                  <div key={stat.label} style={{ ...card, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: stat.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <stat.icon size={18} color={stat.color} />
+                  <div
+                    key={stat.label}
+                    style={{
+                      background: surface,
+                      border: `1px solid ${border}`,
+                      borderRadius: 10,
+                      padding: '18px 20px',
+                    }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 8,
+                      background: stat.lightBg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      marginBottom: 12,
+                    }}>
+                      <stat.icon size={16} color={stat.color} />
                     </div>
-                    <div>
-                      <div style={{ fontSize: 26, fontWeight: 800, color: isDark ? '#F5F5F7' : '#1D1D1F', fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>{stat.value}</div>
-                      <div style={{ fontSize: 11, color: isDark ? '#555' : '#aaa', marginTop: 3 }}>{stat.label}</div>
+                    <div style={{ fontSize: 12, color: textMuted, marginBottom: 4, fontWeight: 500 }}>
+                      {stat.label}
+                    </div>
+                    <div style={{ fontSize: 30, fontWeight: 700, color: textPrimary, lineHeight: 1, marginBottom: 4 }}>
+                      {stat.value}
+                    </div>
+                    <div style={{ fontSize: 11, color: stat.color, fontWeight: 500 }}>
+                      {stat.trend}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Share tip */}
-              <div style={{ ...card, padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'flex-start', background: isDark ? 'rgba(37,211,102,0.06)' : 'rgba(37,211,102,0.05)', border: isDark ? '1px solid rgba(37,211,102,0.15)' : '1px solid rgba(37,211,102,0.15)' }}>
-                <span style={{ fontSize: 20, flexShrink: 0 }}>💡</span>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#E5E5E7' : '#1D1D1F', marginBottom: 4 }}>
-                    {t('Share your website on WhatsApp Status', 'Shiriki tovuti yako kwenye Hali yako ya WhatsApp')}
-                  </p>
-                  <p style={{ fontSize: 12, color: isDark ? '#555' : '#8090c0', lineHeight: 1.6, marginBottom: 10 }}>
-                    {t('Your contacts will see your business and visit your website directly.', 'Mawasiliano yako yataona biashara yako na kutembelea tovuti yako moja kwa moja.')}
-                  </p>
+              {/* Bottom two col */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12 }}>
+
+                {/* Website preview card */}
+                <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: 18 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>
+                      {t('Your website', 'Tovuti yako')}
+                    </div>
+                    <a
+                      href={websiteUrl || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 12, color: accent, fontWeight: 500, textDecoration: 'none' }}
+                    >
+                      {t('Open', 'Fungua')} ↗
+                    </a>
+                  </div>
+
+                  {/* Mini preview */}
+                  <div style={{
+                    background: isDark ? '#0D0D12' : '#F6F6F7',
+                    border: `1px solid ${border}`,
+                    borderRadius: 8, height: 110,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    marginBottom: 14, overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      width: '100%', height: '100%',
+                      background: `linear-gradient(135deg, #004C3F, ${accent})`,
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center', gap: 4,
+                    }}>
+                      <div style={{ fontSize: 24 }}>{emoji}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{business.name}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>{business.address}</div>
+                    </div>
+                  </div>
+
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Check out my business online: ${websiteUrl}`)}`}
+                    href={websiteUrl || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#25D366', color: 'white', textDecoration: 'none', fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      width: '100%', padding: '10px',
+                      borderRadius: 7, border: 'none',
+                      background: accent, color: 'white',
+                      fontSize: 13, fontWeight: 600,
+                      textDecoration: 'none', fontFamily: "'DM Sans', sans-serif",
+                    }}
                   >
-                    <MessageCircle size={13} /> {t('Share now', 'Shiriki sasa')}
+                    <ExternalLink size={13} />
+                    {t('View full website', 'Angalia tovuti kamili')}
                   </a>
+                </div>
+
+                {/* Share card */}
+                <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: 18 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 8 }}>
+                    {t('Grow your business', 'Kukuza biashara yako')}
+                  </div>
+                  <p style={{ fontSize: 12, color: textMuted, lineHeight: 1.6, marginBottom: 16 }}>
+                    {t(
+                      'Share your website link on WhatsApp Status. Businesses that do this get 3× more visitors.',
+                      'Shiriki kiungo chako kwenye Hali ya WhatsApp. Biashara zinazofanya hivi zinapata wageni 3× zaidi.'
+                    )}
+                  </p>
+
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`${t('Check out my business online', 'Angalia biashara yangu mtandaoni')}: ${websiteUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                      width: '100%', padding: '10px',
+                      borderRadius: 7, border: 'none',
+                      background: '#25D366', color: 'white',
+                      fontSize: 13, fontWeight: 600,
+                      textDecoration: 'none', fontFamily: "'DM Sans', sans-serif",
+                      marginBottom: 10,
+                    }}
+                  >
+                    <MessageCircle size={14} />
+                    {t('Share on WhatsApp', 'Shiriki kwenye WhatsApp')}
+                  </a>
+
+                  <button
+                    onClick={handleCopy}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                      width: '100%', padding: '10px',
+                      borderRadius: 7,
+                      border: `1px solid ${border}`,
+                      background: 'transparent', color: textPrimary,
+                      fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {copied ? <CheckCheck size={14} color={accent} /> : <Copy size={14} />}
+                    {copied ? t('Link copied!', 'Kiungo imenakiliwa!') : t('Copy link', 'Nakili kiungo')}
+                  </button>
+
+                  {/* Tip */}
+                  <div style={{
+                    marginTop: 14, padding: '10px 12px',
+                    background: isDark ? 'rgba(0,128,96,0.08)' : '#F1F8F5',
+                    borderRadius: 7,
+                    fontSize: 11, color: textMuted, lineHeight: 1.5,
+                  }}>
+                    💡 {t(
+                      'Tip: Add your OfliX link to your Instagram bio and Google Business profile too.',
+                      'Kidokezo: Ongeza kiungo chako cha OfliX kwenye wasifu wako wa Instagram na Google Business pia.'
+                    )}
+                  </div>
                 </div>
               </div>
             </>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
+
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+      `}</style>
     </div>
   )
 }
