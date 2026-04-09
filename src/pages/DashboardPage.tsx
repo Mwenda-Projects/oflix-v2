@@ -67,11 +67,11 @@ export default function DashboardPage() {
   const textMuted = isDark ? '#666' : '#6D7175'
   const accent = '#008060'
 
-  const navItems = [
-    { id: 'overview', label: t('Overview', 'Muhtasari'), icon: BarChart2 },
-    { id: 'website', label: t('My Website', 'Tovuti Yangu'), icon: Globe, action: () => websiteUrl && window.open(websiteUrl, '_blank') },
-    { id: 'settings', label: t('Settings', 'Mipangilio'), icon: Settings },
-  ]
+ const navItems = [
+  { id: 'overview', label: t('Overview', 'Muhtasari'), icon: BarChart2, path: '/dashboard' },
+  { id: 'website', label: t('My Website', 'Tovuti Yangu'), icon: Globe, path: '/dashboard/website' },
+  { id: 'settings', label: t('Settings', 'Mipangilio'), icon: Settings, path: '/dashboard/settings' },
+]
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: mainBg, fontFamily: "'DM Sans', sans-serif" }}>
@@ -140,7 +140,7 @@ export default function DashboardPage() {
           {navItems.map(item => (
             <button
               key={item.id}
-              onClick={() => { setActiveNav(item.id); item.action?.() }}
+              onClick={() => setActiveNav(item.id)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 8,
                 padding: '8px 9px', borderRadius: 7, marginBottom: 1,

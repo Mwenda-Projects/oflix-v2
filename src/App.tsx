@@ -10,6 +10,8 @@ import SignupPage from '@/pages/SignupPage'
 import OnboardingPage from '@/pages/OnboardingPage'
 import DashboardPage from '@/pages/DashboardPage'
 import BusinessPage from '@/pages/BusinessPage'
+import SettingsPage from '@/pages/SettingsPage'
+import MyWebsitePage from '@/pages/MyWebsitePage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 export default function App() {
@@ -22,24 +24,18 @@ export default function App() {
               {/* Public */}
               <Route path="/" element={<LandingPage />} />
 
-              {/* Guest only — redirect to dashboard if already logged in */}
-              <Route path="/login" element={
-                <GuestRoute><LoginPage /></GuestRoute>
-              } />
-              <Route path="/signup" element={
-                <GuestRoute><SignupPage /></GuestRoute>
-              } />
+              {/* Guest only */}
+              <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+              <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
 
-              {/* Public business page — shareable link for customers */}
+              {/* Public business page */}
               <Route path="/b/:slug" element={<BusinessPage />} />
 
-              {/* Protected — must be logged in */}
-              <Route path="/onboarding" element={
-                <ProtectedRoute><OnboardingPage /></ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute><DashboardPage /></ProtectedRoute>
-              } />
+              {/* Protected */}
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/dashboard/website" element={<ProtectedRoute><MyWebsitePage /></ProtectedRoute>} />
+              <Route path="/dashboard/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
               {/* 404 */}
               <Route path="*" element={<NotFoundPage />} />

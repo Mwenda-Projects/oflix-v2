@@ -1,0 +1,372 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useTheme } from '@/context/ThemeContext'
+import { useLanguage } from '@/context/LanguageContext'
+import { useAuth } from '@/context/AuthContext'
+import { getMyBusiness, updateBusiness } from '@/lib/db'
+import type { Business } from '@/lib/db'
+import { LogOut, Moon, Sun, Sparkles, ChevronRight, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } from 'lucide-react'
+
+export default function SettingsPage() {
+  const { isDark, toggleTheme } = useTheme()
+  const { t, language, toggleLanguage } = useLanguage()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  const [business, setBusiness] = useState<Business | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+
+  useEffect(() => {
+    getMyBusiness().then(biz => {
+      setBusiness(biz)
+      setLoading(false)
+    })
+  }, [])
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/')
+  }
+
+  const startEdit = (field: string, value: string) => {
+    setEditing(field)
+    setEditValue(value)
+    setSaved(false)
+  }
+
+  const saveEdit = async () => {
+    if (!business || !editing) return
+    setSaving(true)
+    await updateBusiness(business.id, { [editing]: editValue } as any)
+    setBusiness({ ...business, [editing]: editValue } as Business)
+    setSaving(false)
+    setSaved(true)
+    setEditing(null)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleRegenerate = async () => {
+    if (!business) return
+    setRegenerating(true)
+    try {
+      const styles: Record<string, string> = {
+        food: 'warm and appetising — deep amber, cream, forest green.',
+        salon: 'elegant and luxurious — rose gold, soft blush, charcoal.',
+        clinic: 'clean and trustworthy — white, calm blue, soft green.',
+        retail: 'bold and modern — vibrant accent on white.',
+        school: 'inspiring and professional — navy, gold, white.',
+        transport: 'strong and reliable — dark navy, orange accent.',
+        construction: 'industrial and trustworthy — dark grey, yellow.',
+        agriculture: 'natural and earthy — green, brown, cream.',
+        tech: 'modern and minimal — dark background, electric blue.',
+        other: 'clean and professional — white with a bold colour accent.',
+      }
+      const style = styles[business.category] || styles.other
+      const num = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
+      const waLink = `https://wa.me/${num}`
+
+      const prompt = `You are a world-class web designer. Build a complete, stunning, mobile-first single-page website for a real Nairobi business.
+
+BUSINESS DETAILS:
+- Name: ${business.name}
+- Type: ${business.category}
+- Description: ${business.description}
+- Phone: ${business.phone}
+- WhatsApp: ${waLink}
+- Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
+
+DESIGN DIRECTION: ${style}
+IMPORTANT: Create a COMPLETELY DIFFERENT design from before. New layout, new colors, new feel — same business details.
+
+STRICT RULES:
+1. Return ONLY raw HTML. No markdown. No backticks. No explanation.
+2. Complete single file with Google Fonts in <head>, all CSS in <style>, JS in <script>.
+3. Mobile-first. Minimum 4 sections. WhatsApp button: ${waLink}
+4. Small "Powered by OfliX" footer.
+5. Must look like a KES 80,000 website.`
+
+      const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+
+      const data = await response.json()
+      const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
+      if (html) {
+        const clean = html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim()
+        await updateBusiness(business.id, { generated_html: clean } as any)
+        setBusiness({ ...business, generated_html: clean } as any)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+    setRegenerating(false)
+  }
+
+  // ── Theme ────────────────────────────────────────────────────
+  const bg = isDark ? '#0F1011' : '#F6F6F7'
+  const surface = isDark ? '#1C1C1E' : '#FFFFFF'
+  const border = isDark ? '#2A2A2A' : '#E5E5E5'
+  const textPrimary = isDark ? '#F5F5F7' : '#1A1A1A'
+  const textMuted = isDark ? '#666' : '#6D7175'
+  const accent = '#008060'
+  const rowBorder = isDark ? '#222' : '#F0F0F0'
+
+  const Section = ({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) => (
+    <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, marginBottom: 16, overflow: 'hidden' }}>
+      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${rowBorder}` }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 2 }}>{title}</div>
+        <div style={{ fontSize: 12, color: textMuted }}>{subtitle}</div>
+      </div>
+      {children}
+    </div>
+  )
+
+  const Row = ({ label, value, action, actionLabel, actionStyle, icon: Icon }: {
+    label: string; value?: string; action?: () => void
+    actionLabel?: string; actionStyle?: 'primary' | 'outline' | 'danger'; icon?: any
+  }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${rowBorder}`, gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+        {Icon && (
+          <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon size={13} color={textMuted} />
+          </div>
+        )}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{label}</div>
+          {value && <div style={{ fontSize: 12, color: textMuted, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>}
+        </div>
+      </div>
+      {action && actionLabel && (
+        <button
+          onClick={action}
+          style={{
+            padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+            border: actionStyle === 'danger' ? '1px solid rgba(255,69,58,0.3)' : actionStyle === 'primary' ? 'none' : `1px solid ${border}`,
+            background: actionStyle === 'primary' ? accent : 'transparent',
+            color: actionStyle === 'danger' ? '#FF453A' : actionStyle === 'primary' ? 'white' : textPrimary,
+            cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0,
+          }}
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  )
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', background: bg, padding: '28px 28px 60px', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ maxWidth: 600, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px', marginBottom: 4 }}>
+            {t('Settings', 'Mipangilio')}
+          </h1>
+          <p style={{ fontSize: 14, color: textMuted }}>
+            {t('Manage your business and account preferences.', 'Simamia biashara yako na mapendeleo ya akaunti.')}
+          </p>
+        </div>
+
+        {/* Saved banner */}
+        {saved && (
+          <div style={{ background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: accent, fontWeight: 500 }}>
+            ✓ {t('Changes saved successfully.', 'Mabadiliko yamehifadhiwa.')}
+          </div>
+        )}
+
+        {/* Edit modal */}
+        {editing && (
+          <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 12 }}>
+              {t('Edit', 'Hariri')} {editing}
+            </div>
+            <input
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+              autoFocus
+              style={{
+                width: '100%', padding: '11px 14px', borderRadius: 8,
+                border: `1.5px solid ${accent}`,
+                background: isDark ? '#111' : '#FFF',
+                color: textPrimary, fontSize: 14,
+                fontFamily: "'DM Sans', sans-serif",
+                outline: 'none', marginBottom: 12,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setEditing(null)} style={{ padding: '8px 16px', borderRadius: 7, border: `1px solid ${border}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                {t('Cancel', 'Ghairi')}
+              </button>
+              <button onClick={saveEdit} disabled={saving} style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: accent, color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                {saving ? t('Saving...', 'Inahifadhi...') : t('Save', 'Hifadhi')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Business profile */}
+        {!loading && business && (
+          <Section
+            title={t('Business profile', 'Wasifu wa biashara')}
+            subtitle={t('Update your business information', 'Sasisha maelezo ya biashara yako')}
+          >
+            <Row icon={Globe} label={t('Business name', 'Jina la biashara')} value={business.name} action={() => startEdit('name', business.name)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
+            <Row icon={Phone} label={t('Phone number', 'Nambari ya simu')} value={business.phone} action={() => startEdit('phone', business.phone)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
+            <Row icon={Clock} label={t('Business hours', 'Masaa ya biashara')} value={business.hours || t('Not set', 'Haijawekwa')} action={() => startEdit('hours', business.hours || '')} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
+            <div style={{ borderBottom: 'none' }}>
+              <Row icon={MapPin} label={t('Location', 'Eneo')} value={business.address} action={() => startEdit('address', business.address)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
+            </div>
+          </Section>
+        )}
+
+        {/* Your website */}
+        {!loading && business && (
+          <Section
+            title={t('Your website', 'Tovuti yako')}
+            subtitle={t('Manage your public business page', 'Simamia ukurasa wako wa umma wa biashara')}
+          >
+            <Row
+              icon={Globe}
+              label={t('Website status', 'Hali ya tovuti')}
+              value={`oflix.co.ke/b/${business.slug}`}
+              action={() => window.open(`/b/${business.slug}`, '_blank')}
+              actionLabel={t('View', 'Angalia')}
+              actionStyle="outline"
+            />
+            <div style={{ borderBottom: 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Sparkles size={13} color={accent} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{t('Regenerate website', 'Jenga upya tovuti')}</div>
+                    <div style={{ fontSize: 12, color: textMuted, marginTop: 1 }}>{t('Build a fresh new design with AI', 'Jenga muundo mpya na AI')}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRegenerate}
+                  disabled={regenerating}
+                  style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: 'none', background: accent, color: 'white', cursor: regenerating ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: regenerating ? 0.7 : 1, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {regenerating ? (
+                    <>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+                      {t('Regenerating...', 'Inajenga upya...')}
+                    </>
+                  ) : t('Regenerate', 'Jenga upya')}
+                </button>
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {/* Preferences */}
+        <Section
+          title={t('Preferences', 'Mapendeleo')}
+          subtitle={t('Personalise your experience', 'Binafsisha uzoefu wako')}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${rowBorder}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Globe size={13} color={textMuted} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{t('Language', 'Lugha')}</div>
+                <div style={{ fontSize: 12, color: textMuted }}>{language === 'en' ? 'English' : 'Kiswahili'}</div>
+              </div>
+            </div>
+            <button onClick={toggleLanguage} style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: `1px solid ${border}`, background: 'transparent', color: textPrimary, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+              {language === 'en' ? 'Kiswahili' : 'English'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isDark ? <Moon size={13} color={textMuted} /> : <Sun size={13} color={textMuted} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{t('Dark mode', 'Hali ya giza')}</div>
+                <div style={{ fontSize: 12, color: textMuted }}>{isDark ? t('On', 'Imewashwa') : t('Off', 'Imezimwa')}</div>
+              </div>
+            </div>
+            <div
+              onClick={toggleTheme}
+              style={{ width: 40, height: 22, borderRadius: 11, background: isDark ? accent : '#E5E5E5', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}
+            >
+              <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'white', position: 'absolute', top: 2, left: isDark ? 20 : 2, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+            </div>
+          </div>
+        </Section>
+
+        {/* Account */}
+        <Section
+          title={t('Account', 'Akaunti')}
+          subtitle={t('Manage your OfliX account', 'Simamia akaunti yako ya OfliX')}
+        >
+          <Row
+            icon={Mail}
+            label={t('Email address', 'Anwani ya barua pepe')}
+            value={user?.email || ''}
+          />
+          <Row
+            icon={Lock}
+            label={t('Change password', 'Badilisha nenosiri')}
+            value={t('Update your login password', 'Sasisha nenosiri lako la kuingia')}
+            action={() => {}}
+            actionLabel={t('Change', 'Badilisha')}
+            actionStyle="outline"
+          />
+
+          {/* Delete account */}
+          <div style={{ padding: '14px 20px' }}>
+            {!deleteConfirm ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 7, background: 'rgba(255,69,58,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trash2 size={13} color="#FF453A" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#FF453A' }}>{t('Delete account', 'Futa akaunti')}</div>
+                    <div style={{ fontSize: 12, color: textMuted }}>{t('Permanently remove your business and website', 'Ondoa biashara na tovuti yako kabisa')}</div>
+                  </div>
+                </div>
+                <button onClick={() => setDeleteConfirm(true)} style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,69,58,0.3)', background: 'transparent', color: '#FF453A', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
+                  {t('Delete', 'Futa')}
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: 'rgba(255,69,58,0.06)', border: '1px solid rgba(255,69,58,0.2)', borderRadius: 8, padding: '14px 16px' }}>
+                <p style={{ fontSize: 13, color: '#FF453A', fontWeight: 600, marginBottom: 4 }}>{t('Are you sure?', 'Una uhakika?')}</p>
+                <p style={{ fontSize: 12, color: textMuted, marginBottom: 12 }}>{t('This will permanently delete your business, website and all data. This cannot be undone.', 'Hii itafuta biashara yako, tovuti na data zote kabisa. Haiwezi kutendwa upya.')}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setDeleteConfirm(false)} style={{ padding: '7px 16px', borderRadius: 7, border: `1px solid ${border}`, background: 'transparent', color: textMuted, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    {t('Cancel', 'Ghairi')}
+                  </button>
+                  <button style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: '#FF453A', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    {t('Yes, delete everything', 'Ndio, futa kila kitu')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
+
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
