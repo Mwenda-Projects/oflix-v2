@@ -1,16 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useLanguage } from '@/context/LanguageContext'
 import { useTheme } from '@/context/ThemeContext'
 import { createBusiness, updateBusiness } from '@/lib/db'
-import { Send, Sparkles } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 
-interface Message {
-  id: string
-  from: 'ai' | 'user'
-  text: string
-}
-
+// ── Types ──────────────────────────────────────────────────────
 interface Collected {
   businessName?: string
   category?: string
@@ -21,35 +15,42 @@ interface Collected {
   hours?: string
 }
 
+// ── Steps ──────────────────────────────────────────────────────
 const STEPS = [
   {
     field: 'businessName',
-    ask: (lang: string) => lang === 'sw'
-      ? 'Habari! 👋 Mimi ni msaidizi wako wa OfliX. Jina la biashara yako ni nini?'
-      : "Hi there! 👋 I'm your OfliX assistant. Let's get your business online in 2 minutes. What's your business name?",
+    question: "What's your business name?",
+    placeholder: 'e.g. Mama Grace Salon',
+    hint: 'Just type the name your customers know you by.',
   },
   {
     field: 'description',
-    ask: (_: string, d: Collected) =>
-      `Nice name! 🎉 What does ${d.businessName} sell or offer? Just describe it like you'd tell a friend on WhatsApp.`,
+    question: 'What does your business offer?',
+    placeholder: 'e.g. We do hair styling, braiding and manicures. Walk-ins welcome daily.',
+    hint: 'Describe it like you would tell a friend on WhatsApp.',
+    multiline: true,
   },
   {
     field: 'address',
-    ask: (_: string, d: Collected) =>
-      `Got it! Where is ${d.businessName} located? For example: "Tom Mboya Street, Nairobi CBD" or "Westlands, near Sarit Centre"`,
+    question: 'Where are you located?',
+    placeholder: 'e.g. Tom Mboya Street, Nairobi CBD',
+    hint: 'Your customers need to know where to find you.',
   },
   {
     field: 'phone',
-    ask: () =>
-      `What phone number should customers call or WhatsApp you on?`,
+    question: 'What number should customers call or WhatsApp?',
+    placeholder: '0712 345 678',
+    hint: 'This will appear on your website as a tap-to-call button.',
   },
   {
     field: 'hours',
-    ask: () =>
-      `Last one! ✨ What are your working hours? e.g. "Mon–Sat 8am–7pm" — or just type "skip" if you're flexible.`,
+    question: 'What are your working hours?',
+    placeholder: 'e.g. Mon–Sat 8am–7pm',
+    hint: "Not sure yet? Just type \"open\" and you can update it later.",
   },
 ]
 
+// ── Category detection ─────────────────────────────────────────
 function detectCategory(description: string): string {
   const d = description.toLowerCase()
   if (d.match(/hair|salon|beauty|nail|braid|barber|spa/)) return 'salon'
@@ -64,6 +65,7 @@ function detectCategory(description: string): string {
   return 'other'
 }
 
+// ── AI generation ─────────────────────────────────────────────
 async function generateWebsite(business: Collected): Promise<string> {
   const styles: Record<string, string> = {
     food: 'warm and appetising — deep amber, cream, forest green. Hero, menu highlights, hours, WhatsApp order button.',
@@ -90,7 +92,7 @@ BUSINESS DETAILS:
 - Description: ${business.description}
 - Phone: ${business.phone}
 - WhatsApp: ${waLink}
-- Address: ${business.address}${business.hours && business.hours !== 'skip' ? `\n- Hours: ${business.hours}` : ''}
+- Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
 
 DESIGN DIRECTION: ${style}
 
@@ -98,7 +100,7 @@ STRICT RULES:
 1. Return ONLY raw HTML. No markdown. No backticks. No explanation.
 2. Complete single file: <html>, <head> with Google Fonts, all CSS in <style>, all JS in <script>.
 3. Mobile-first. Looks perfect on a phone.
-4. Use the EXACT business details above — no placeholders ever.
+4. Use EXACT business details above — no placeholders ever.
 5. WhatsApp button: ${waLink}
 6. Phone link: tel:${business.phone}
 7. Minimum 4 sections: Hero, Services/About, Contact, Call-to-action.
@@ -127,66 +129,54 @@ STRICT RULES:
   return html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim()
 }
 
+// ── Component ──────────────────────────────────────────────────
 export default function OnboardingPage() {
   const { isDark } = useTheme()
-  const { language } = useLanguage()
   const navigate = useNavigate()
 
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
   const [step, setStep] = useState(0)
+  const [value, setValue] = useState('')
   const [collected, setCollected] = useState<Collected>({})
-  const [isTyping, setIsTyping] = useState(false)
   const [isBuilding, setIsBuilding] = useState(false)
-  const [done, setDone] = useState(false)
+  const [buildStatus, setBuildStatus] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [done, setDone] = useState(false)
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
+
+  const currentStep = STEPS[step]
 
   useEffect(() => {
-    setTimeout(() => sendAI(STEPS[0].ask(language, {})), 700)
-  }, [])
+    setTimeout(() => inputRef.current?.focus(), 100)
+  }, [step])
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isTyping, isBuilding])
+  async function handleNext() {
+    const val = value.trim()
+    if (!val) return
 
-  function sendAI(text: string) {
-    setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      setMessages(prev => [...prev, { id: Date.now().toString(), from: 'ai', text }])
-      setTimeout(() => inputRef.current?.focus(), 100)
-    }, 800 + Math.random() * 500)
+    const next: Collected = { ...collected, [currentStep.field]: val }
+    if (currentStep.field === 'description') next.category = detectCategory(val)
+    if (currentStep.field === 'phone') next.whatsapp = val
+    setCollected(next)
+    setValue('')
+
+    if (step < STEPS.length - 1) {
+      setStep(s => s + 1)
+    } else {
+      await build(next)
+    }
   }
 
-  async function handleSend() {
-    const val = input.trim()
-    if (!val || isTyping || isBuilding) return
-    setInput('')
-
-    setMessages(prev => [...prev, { id: Date.now().toString(), from: 'user', text: val }])
-
-    const field = STEPS[step].field
-    const next: Collected = { ...collected, [field]: val }
-    if (field === 'description') next.category = detectCategory(val)
-    if (field === 'phone') next.whatsapp = val
-    setCollected(next)
-
-    const nextStep = step + 1
-    if (nextStep < STEPS.length) {
-      setStep(nextStep)
-      setTimeout(() => sendAI(STEPS[nextStep].ask(language, next)), 400)
-    } else {
-      setStep(nextStep)
-      setTimeout(() => build(next), 400)
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleNext()
     }
   }
 
   async function build(data: Collected) {
     setIsBuilding(true)
     setError(null)
-    sendAI(`Perfect! I have everything I need. 🚀 Building your website now — give me about 30 seconds...`)
+    setBuildStatus('Saving your business details...')
 
     try {
       const { data: biz, error: err } = await createBusiness({
@@ -196,226 +186,274 @@ export default function OnboardingPage() {
         phone: data.phone || '',
         whatsapp: data.whatsapp || data.phone || '',
         address: data.address || '',
-        hours: data.hours !== 'skip' ? data.hours : undefined,
+        hours: data.hours,
       })
 
       if (err || !biz) throw new Error('Could not save')
 
+      setBuildStatus('AI is designing your website...')
       const html = await generateWebsite(data)
+
+      setBuildStatus('Almost done...')
       await updateBusiness(biz.id, { generated_html: html } as any)
 
       setIsBuilding(false)
       setDone(true)
-      setTimeout(() => sendAI(`Your website is LIVE! 🎉 Go to your dashboard to view and share it with customers.`), 300)
 
     } catch {
       setIsBuilding(false)
-      setError('Something went wrong.')
-      setTimeout(() => sendAI(`Hmm, something went wrong. Tap "Try again" below.`), 300)
+      setBuildStatus('')
+      setError('Something went wrong. Please try again.')
     }
   }
 
-  const bg = isDark ? '#0D0D12' : '#ECE5DD'
-  const surface = isDark ? '#1A1B22' : '#FFFFFF'
-  const aiBg = isDark ? '#1E2028' : '#FFFFFF'
-  const border = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'
+  // ── Theme ────────────────────────────────────────────────────
+  const bg = isDark ? '#0D0D12' : '#FFFFFF'
   const textPrimary = isDark ? '#F5F5F7' : '#1A1A1A'
-  const textMuted = isDark ? '#555' : '#8E8E93'
+  const textMuted = isDark ? '#666' : '#8E8E93'
+  const inputBorder = isDark ? '#2A2A2A' : '#E5E5E5'
+  const inputBg = isDark ? '#1A1A1A' : '#FFFFFF'
+  const inputFocus = '#008060'
+  const accent = '#008060'
 
+  // ── Building screen ──────────────────────────────────────────
+  if (isBuilding || done) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: bg,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: 24, fontFamily: "'DM Sans', sans-serif",
+        textAlign: 'center',
+      }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: 16,
+          background: accent,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 24,
+          animation: isBuilding ? 'pulse 2s ease infinite' : 'none',
+        }}>
+          <Sparkles size={28} color="white" />
+        </div>
+
+        {done ? (
+          <>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, marginBottom: 8, letterSpacing: '-0.4px' }}>
+              Your website is live! 🎉
+            </h2>
+            <p style={{ fontSize: 14, color: textMuted, marginBottom: 32, lineHeight: 1.6 }}>
+              Your professional website has been built and is ready to share with customers.
+            </p>
+            <button
+              onClick={() => navigate('/dashboard')}
+              style={{
+                padding: '14px 32px', borderRadius: 10,
+                border: 'none', background: accent,
+                color: 'white', fontSize: 15, fontWeight: 600,
+                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              Go to my dashboard <ArrowRight size={16} />
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, marginBottom: 8, letterSpacing: '-0.4px' }}>
+              Building your website...
+            </h2>
+            <p style={{ fontSize: 14, color: textMuted, marginBottom: 20 }}>
+              {buildStatus}
+            </p>
+            {/* Progress bar */}
+            <div style={{
+              width: 200, height: 3, borderRadius: 2,
+              background: isDark ? '#2A2A2A' : '#E5E5E5',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                height: '100%', borderRadius: 2,
+                background: accent,
+                animation: 'loading 2s ease infinite',
+              }} />
+            </div>
+            <p style={{ fontSize: 12, color: textMuted, marginTop: 12 }}>
+              This takes about 30 seconds — please don't close this tab
+            </p>
+          </>
+        )}
+
+        <style>{`
+          @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+          @keyframes loading { 0%{width:0%} 70%{width:85%} 100%{width:90%} }
+        `}</style>
+      </div>
+    )
+  }
+
+  // ── Main onboarding ──────────────────────────────────────────
   return (
     <div style={{
       minHeight: '100vh', background: bg,
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      padding: 16, fontFamily: "'DM Sans', sans-serif",
+      padding: '24px 16px',
+      fontFamily: "'DM Sans', sans-serif",
     }}>
-      <div style={{
-        width: '100%', maxWidth: 480,
-        height: '88vh', maxHeight: 720,
-        background: surface,
-        borderRadius: 20,
-        border: `1px solid ${border}`,
-        boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.5)' : '0 20px 60px rgba(0,0,0,0.12)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      }}>
+      <div style={{ width: '100%', maxWidth: 520 }}>
 
-        {/* Header — WhatsApp style */}
-        <div style={{
-          padding: '14px 18px',
-          background: '#008060',
-          display: 'flex', alignItems: 'center', gap: 12,
-        }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 48 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.2)',
+            width: 28, height: 28, borderRadius: 7,
+            background: accent,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <Sparkles size={18} color="white" />
+            <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 14 }}>O</span>
           </div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>OfliX Assistant</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>
-              {isBuilding ? 'Building your website...' : 'Online'}
-            </div>
-          </div>
+          <span style={{ fontSize: 15, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px' }}>OfliX</span>
         </div>
 
-        {/* Messages */}
-        <div style={{
-          flex: 1, overflowY: 'auto',
-          padding: '16px 14px 8px',
-          display: 'flex', flexDirection: 'column', gap: 6,
-          background: isDark ? '#0D0D12' : '#ECE5DD',
-        }}>
-          {messages.map(msg => (
-            <div key={msg.id} style={{
-              display: 'flex',
-              justifyContent: msg.from === 'user' ? 'flex-end' : 'flex-start',
-            }}>
-              <div style={{
-                maxWidth: '78%',
-                padding: '9px 13px',
-                borderRadius: msg.from === 'user' ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                background: msg.from === 'user' ? '#DCF8C6' : aiBg,
-                color: msg.from === 'user' ? '#1A1A1A' : textPrimary,
-                fontSize: 14, lineHeight: 1.5,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-              }}>
-                {msg.text}
-                <div style={{ fontSize: 10, color: textMuted, marginTop: 3, textAlign: 'right' }}>
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Typing dots */}
-          {isTyping && (
-            <div style={{ display: 'flex' }}>
-              <div style={{
-                padding: '10px 16px', borderRadius: '4px 16px 16px 16px',
-                background: aiBg, boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                display: 'flex', gap: 4, alignItems: 'center',
-              }}>
-                {[0, 1, 2].map(i => (
-                  <div key={i} style={{
-                    width: 7, height: 7, borderRadius: '50%',
-                    background: textMuted,
-                    animation: `bounce 1.2s ease infinite`,
-                    animationDelay: `${i * 0.2}s`,
-                  }} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Building spinner */}
-          {isBuilding && !isTyping && (
-            <div style={{ display: 'flex' }}>
-              <div style={{
-                padding: '10px 14px', borderRadius: '4px 16px 16px 16px',
-                background: 'rgba(0,128,96,0.1)',
-                border: '1px solid rgba(0,128,96,0.2)',
-                display: 'flex', alignItems: 'center', gap: 8,
-                fontSize: 13, color: '#008060', fontWeight: 500,
-              }}>
-                <div style={{
-                  width: 12, height: 12, borderRadius: '50%',
-                  border: '2px solid #008060', borderTopColor: 'transparent',
-                  animation: 'spin 0.8s linear infinite', flexShrink: 0,
-                }} />
-                Building your website...
-              </div>
-            </div>
-          )}
-
-          {/* Done button */}
-          {done && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
-              <button
-                onClick={() => navigate('/dashboard')}
-                style={{
-                  padding: '13px 28px', borderRadius: 25,
-                  border: 'none', background: '#008060',
-                  color: 'white', fontSize: 14, fontWeight: 700,
-                  cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-                  boxShadow: '0 4px 20px rgba(0,128,96,0.4)',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                }}
-              >
-                <Sparkles size={16} /> Go to my dashboard
-              </button>
-            </div>
-          )}
-
-          {/* Error retry */}
-          {error && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
-              <button
-                onClick={() => { setError(null); build(collected) }}
-                style={{
-                  padding: '10px 22px', borderRadius: 20,
-                  border: '1px solid rgba(255,69,58,0.3)',
-                  background: 'rgba(255,69,58,0.08)',
-                  color: '#FF453A', fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Try again
-              </button>
-            </div>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Input bar — WhatsApp style */}
-        {!done && (
-          <div style={{
-            padding: '10px 12px',
-            background: isDark ? '#1A1B22' : '#F0F0F0',
-            display: 'flex', gap: 8, alignItems: 'center',
-          }}>
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-              placeholder={isBuilding ? 'Building your website...' : 'Type a message...'}
-              disabled={isTyping || isBuilding}
+        {/* Progress bar */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 40 }}>
+          {STEPS.map((_, i) => (
+            <div
+              key={i}
               style={{
-                flex: 1, padding: '10px 16px',
-                borderRadius: 24, border: 'none',
-                background: surface,
-                color: textPrimary, fontSize: 14,
-                fontFamily: "'DM Sans', sans-serif",
-                outline: 'none',
-                opacity: (isTyping || isBuilding) ? 0.6 : 1,
+                flex: 1, height: 3, borderRadius: 2,
+                background: i < step
+                  ? accent
+                  : i === step
+                    ? isDark ? '#2A2A2A' : '#E5E5E5'
+                    : isDark ? '#1A1A1A' : '#F0F0F0',
+                transition: 'background 0.3s',
               }}
             />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isTyping || isBuilding}
-              style={{
-                width: 42, height: 42, borderRadius: '50%',
-                border: 'none',
-                background: input.trim() && !isTyping && !isBuilding ? '#008060' : (isDark ? '#2A2A2A' : '#D0D0D0'),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: input.trim() && !isTyping && !isBuilding ? 'pointer' : 'not-allowed',
-                flexShrink: 0, transition: 'background 0.2s',
-              }}
-            >
-              <Send size={16} color={input.trim() && !isTyping && !isBuilding ? 'white' : (isDark ? '#444' : '#999')} />
-            </button>
+          ))}
+        </div>
+
+        {/* Step counter */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          fontSize: 11, color: accent, fontWeight: 600,
+          background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5',
+          border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`,
+          padding: '4px 10px', borderRadius: 20,
+          marginBottom: 20,
+        }}>
+          <Sparkles size={11} />
+          Step {step + 1} of {STEPS.length}
+        </div>
+
+        {/* Question */}
+        <h1 style={{
+          fontSize: 26, fontWeight: 700,
+          color: textPrimary,
+          letterSpacing: '-0.4px',
+          lineHeight: 1.3,
+          marginBottom: 8,
+        }}>
+          {currentStep.question}
+        </h1>
+
+        <p style={{
+          fontSize: 14, color: textMuted,
+          marginBottom: 28, lineHeight: 1.6,
+        }}>
+          {currentStep.hint}
+        </p>
+
+        {/* Input */}
+        {currentStep.multiline ? (
+          <textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={currentStep.placeholder}
+            rows={4}
+            style={{
+              width: '100%', padding: '14px 16px',
+              borderRadius: 10,
+              border: `1.5px solid ${inputBorder}`,
+              background: inputBg,
+              color: textPrimary,
+              fontSize: 15,
+              fontFamily: "'DM Sans', sans-serif",
+              outline: 'none',
+              resize: 'none',
+              lineHeight: 1.6,
+              marginBottom: 16,
+              transition: 'border-color 0.2s',
+            }}
+            onFocus={e => e.target.style.borderColor = inputFocus}
+            onBlur={e => e.target.style.borderColor = inputBorder}
+          />
+        ) : (
+          <input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
+            type={currentStep.field === 'phone' ? 'tel' : 'text'}
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={currentStep.placeholder}
+            style={{
+              width: '100%', padding: '14px 16px',
+              borderRadius: 10,
+              border: `1.5px solid ${inputBorder}`,
+              background: inputBg,
+              color: textPrimary,
+              fontSize: 15,
+              fontFamily: "'DM Sans', sans-serif",
+              outline: 'none',
+              marginBottom: 16,
+              transition: 'border-color 0.2s',
+              display: 'block',
+            }}
+            onFocus={e => e.target.style.borderColor = inputFocus}
+            onBlur={e => e.target.style.borderColor = inputBorder}
+          />
+        )}
+
+        {/* Error */}
+        {error && (
+          <div style={{
+            padding: '10px 14px', borderRadius: 8,
+            background: 'rgba(255,69,58,0.08)',
+            border: '1px solid rgba(255,69,58,0.2)',
+            fontSize: 13, color: '#FF453A',
+            marginBottom: 14,
+          }}>
+            {error}
           </div>
         )}
-      </div>
 
-      <style>{`
-        @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
-        @keyframes spin { to{transform:rotate(360deg)} }
-      `}</style>
+        {/* Continue button */}
+        <button
+          onClick={handleNext}
+          disabled={!value.trim()}
+          style={{
+            width: '100%', padding: '14px',
+            borderRadius: 10, border: 'none',
+            background: value.trim() ? accent : (isDark ? '#1A1A1A' : '#F0F0F0'),
+            color: value.trim() ? 'white' : textMuted,
+            fontSize: 15, fontWeight: 600,
+            cursor: value.trim() ? 'pointer' : 'not-allowed',
+            fontFamily: "'DM Sans', sans-serif",
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'all 0.2s',
+          }}
+        >
+          {step === STEPS.length - 1 ? 'Build my website' : 'Continue'}
+          <ArrowRight size={16} />
+        </button>
+
+        <p style={{ fontSize: 12, color: textMuted, textAlign: 'center', marginTop: 14 }}>
+          Press Enter to continue
+        </p>
+
+      </div>
     </div>
   )
 }
