@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import { useAuth } from '@/context/AuthContext'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
 import type { Business } from '@/lib/db'
-import { LogOut, Moon, Sun, Sparkles, ChevronRight, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } from 'lucide-react'
+import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
@@ -328,6 +328,12 @@ STRICT RULES:
             value={t('Update your login password', 'Sasisha nenosiri lako la kuingia')}
             action={() => {}}
             actionLabel={t('Change', 'Badilisha')}
+            actionStyle="outline"
+          />
+          <Row
+            label={t('Sign out', 'Toka')}
+            action={handleSignOut}
+            actionLabel={t('Sign out', 'Toka')}
             actionStyle="outline"
           />
 
