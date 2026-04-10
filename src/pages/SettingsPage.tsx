@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useAuth } from '@/context/AuthContext'
@@ -10,8 +9,7 @@ import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
   const { t, language, toggleLanguage } = useLanguage()
-  const { user, signOut } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
@@ -28,11 +26,6 @@ export default function SettingsPage() {
       setLoading(false)
     })
   }, [])
-
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/')
-  }
 
   const startEdit = (field: string, value: string) => {
     setEditing(field)
@@ -187,7 +180,7 @@ STRICT RULES:
           </div>
         )}
 
-        {/* Edit modal */}
+        {/* Edit inline box */}
         {editing && (
           <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 12 }}>
@@ -226,9 +219,7 @@ STRICT RULES:
             <Row icon={Globe} label={t('Business name', 'Jina la biashara')} value={business.name} action={() => startEdit('name', business.name)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
             <Row icon={Phone} label={t('Phone number', 'Nambari ya simu')} value={business.phone} action={() => startEdit('phone', business.phone)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
             <Row icon={Clock} label={t('Business hours', 'Masaa ya biashara')} value={business.hours || t('Not set', 'Haijawekwa')} action={() => startEdit('hours', business.hours || '')} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
-            <div style={{ borderBottom: 'none' }}>
-              <Row icon={MapPin} label={t('Location', 'Eneo')} value={business.address} action={() => startEdit('address', business.address)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
-            </div>
+            <Row icon={MapPin} label={t('Location', 'Eneo')} value={business.address} action={() => startEdit('address', business.address)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
           </Section>
         )}
 
@@ -246,29 +237,28 @@ STRICT RULES:
               actionLabel={t('View', 'Angalia')}
               actionStyle="outline"
             />
-            <div style={{ borderBottom: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Sparkles size={13} color={accent} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{t('Regenerate website', 'Jenga upya tovuti')}</div>
-                    <div style={{ fontSize: 12, color: textMuted, marginTop: 1 }}>{t('Build a fresh new design with AI', 'Jenga muundo mpya na AI')}</div>
-                  </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Sparkles size={13} color={accent} />
                 </div>
-                <button
-                  onClick={handleRegenerate}
-                  disabled={regenerating}
-                  style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: 'none', background: accent, color: 'white', cursor: regenerating ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: regenerating ? 0.7 : 1, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {regenerating ? (
-                    <>
-                      <div style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-                      {t('Regenerating...', 'Inajenga upya...')}
-                    </>
-                  ) : t('Regenerate', 'Jenga upya')}
-                </button>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{t('Regenerate website', 'Jenga upya tovuti')}</div>
+                  <div style={{ fontSize: 12, color: textMuted, marginTop: 1 }}>{t('Build a fresh new design with AI', 'Jenga muundo mpya na AI')}</div>
+                </div>
               </div>
+              <button
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: 'none', background: accent, color: 'white', cursor: regenerating ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: regenerating ? 0.7 : 1, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {regenerating ? (
+                  <>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+                    {t('Regenerating...', 'Inajenga upya...')}
+                  </>
+                ) : t('Regenerate', 'Jenga upya')}
+              </button>
             </div>
           </Section>
         )}
@@ -328,12 +318,6 @@ STRICT RULES:
             value={t('Update your login password', 'Sasisha nenosiri lako la kuingia')}
             action={() => {}}
             actionLabel={t('Change', 'Badilisha')}
-            actionStyle="outline"
-          />
-          <Row
-            label={t('Sign out', 'Toka')}
-            action={handleSignOut}
-            actionLabel={t('Sign out', 'Toka')}
             actionStyle="outline"
           />
 
