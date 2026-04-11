@@ -1,18 +1,18 @@
 // api/mpesa-stk.js
-// Triggers M-Pesa STK push for OfliX subscription payments
-// Adapted from The Mwenda Chronicles store implementation
+// OfliX subscription STK push
+// Uses exact same pattern as The Mwenda Chronicles stk-push.ts
 
 import { createClient } from '@supabase/supabase-js'
 
 const MPESA_BASE_URL = 'https://api.safaricom.co.ke'
+const STORE_NUMBER   = '9828218'   // BusinessShortCode — same as blog
+const TILL_NUMBER    = '3206805'   // PartyB — same as blog
 
-// ── Plans ──────────────────────────────────────────────────────
 const PLANS = {
-  basic: { amount: 499, name: 'OfliX Basic', label: 'Basic Plan — KES 499/month' },
-  pro:   { amount: 999, name: 'OfliX Pro',   label: 'Pro Plan — KES 999/month'   },
+  basic: { amount: 499, label: 'OfliX Basic' },
+  pro:   { amount: 999, label: 'OfliX Pro'   },
 }
 
-// ── Helpers ────────────────────────────────────────────────────
 function getTimestamp() {
   const now = new Date()
   return (
@@ -40,7 +40,6 @@ async function getAccessToken() {
   return data.access_token
 }
 
-// ── Handler ────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -60,21 +59,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid plan. Choose basic or pro.' })
     }
 
-    // Format phone → 254XXXXXXXXX
+    // Format phone → 254XXXXXXXXX — exact same as blog
     const formattedPhone = phone.startsWith('0')
       ? `254${phone.slice(1)}`
       : phone.startsWith('+254')
       ? phone.slice(1)
       : phone
 
-    const shortcode   = process.env.VITE_MPESA_SHORTCODE
     const passkey     = process.env.VITE_MPESA_PASSKEY
-    const callbackUrl = `${process.env.VITE_MPESA_CALLBACK_URL || 'https://oflix-v2.vercel.app'}/api/mpesa-callback`
+    const callbackUrl = `https://oflix-v2.vercel.app/api/mpesa-callback`
     const timestamp   = getTimestamp()
-    const password    = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64')
+    const password    = Buffer.from(`${STORE_NUMBER}${passkey}${timestamp}`).toString('base64')
     const accessToken = await getAccessToken()
 
-    // Trigger STK push
+    // STK push — exact same structure as blog stk-push.ts
     const stkResponse = await fetch(`${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
       headers: {
@@ -82,21 +80,23 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        BusinessShortCode: shortcode,
+        BusinessShortCode: STORE_NUMBER,
         Password:          password,
         Timestamp:         timestamp,
-        TransactionType:   'CustomerPayBillOnline',
-        Amount:            planDetails.amount,
+        TransactionType:   'CustomerBuyGoodsOnline',  // exact same as blog
+        Amount:            Math.round(planDetails.amount),
         PartyA:            formattedPhone,
-        PartyB:            shortcode,
+        PartyB:            TILL_NUMBER,               // exact same as blog
         PhoneNumber:       formattedPhone,
         CallBackURL:       callbackUrl,
         AccountReference:  'OfliX',
-        TransactionDesc:   planDetails.label,
+        TransactionDesc:   `OfliX: ${planDetails.label}`,
       }),
     })
 
     const stkData = await stkResponse.json()
+
+    console.log('STK response:', JSON.stringify(stkData))
 
     if (!stkResponse.ok || stkData.ResponseCode !== '0') {
       return res.status(400).json({
@@ -104,23 +104,23 @@ export default async function handler(req, res) {
       })
     }
 
-    // Save pending subscription to Supabase
+    // Save pending subscription
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
     await supabase.from('subscriptions').upsert({
-      user_id:              userId,
-      plan:                 'pending',
-      mpesa_phone:          formattedPhone,
-      checkout_request_id:  stkData.CheckoutRequestID,
-      updated_at:           new Date().toISOString(),
+      user_id:             userId,
+      plan:                'pending',
+      mpesa_phone:         formattedPhone,
+      checkout_request_id: stkData.CheckoutRequestID,
+      updated_at:          new Date().toISOString(),
     }, { onConflict: 'user_id' })
 
     return res.status(200).json({
       success:           true,
-      message:           'Check your phone and enter your M-Pesa PIN to complete payment.',
+      message:           'Check your phone and enter your M-Pesa PIN.',
       checkoutRequestId: stkData.CheckoutRequestID,
     })
 
