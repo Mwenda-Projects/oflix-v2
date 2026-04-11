@@ -12,6 +12,7 @@ import DashboardPage from '@/pages/DashboardPage'
 import BusinessPage from '@/pages/BusinessPage'
 import SettingsPage from '@/pages/SettingsPage'
 import MyWebsitePage from '@/pages/MyWebsitePage'
+import UpgradePage from '@/pages/UpgradePage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/dashboard/website" element={<ProtectedRoute><MyWebsitePage /></ProtectedRoute>} />
               <Route path="/dashboard/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
 
               {/* 404 */}
               <Route path="*" element={<NotFoundPage />} />

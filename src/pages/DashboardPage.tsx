@@ -58,7 +58,6 @@ export default function DashboardPage() {
   const websiteUrl = business ? `${window.location.origin}/b/${business.slug}` : null
   const emoji = business ? (CATEGORY_EMOJI[business.category] || '✨') : '🏪'
 
-  // ── Theme tokens ─────────────────────────────────────────────
   const sidebarBg = '#1A1A1A'
   const mainBg = isDark ? '#0F1011' : '#F6F6F7'
   const surface = isDark ? '#1C1C1E' : '#FFFFFF'
@@ -68,9 +67,10 @@ export default function DashboardPage() {
   const accent = '#008060'
 
   const navItems = [
-    { id: 'overview', label: t('Overview', 'Muhtasari'), icon: BarChart2, path: '/dashboard' },
-    { id: 'website', label: t('My Website', 'Tovuti Yangu'), icon: Globe, path: '/dashboard/website' },
-    { id: 'settings', label: t('Settings', 'Mipangilio'), icon: Settings, path: '/dashboard/settings' },
+    { id: 'overview',  label: t('Overview', 'Muhtasari'),     icon: BarChart2, path: '/dashboard' },
+    { id: 'website',   label: t('My Website', 'Tovuti Yangu'), icon: Globe,     path: '/dashboard/website' },
+    { id: 'upgrade',   label: t('Upgrade plan', 'Boresha'),    icon: Sparkles,  path: '/upgrade' },
+    { id: 'settings',  label: t('Settings', 'Mipangilio'),     icon: Settings,  path: '/dashboard/settings' },
   ]
 
   const isActive = (path: string) => location.pathname === path
@@ -79,12 +79,7 @@ export default function DashboardPage() {
     <div style={{ display: 'flex', minHeight: '100vh', background: mainBg, fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* ── Sidebar ─────────────────────────────────────────── */}
-      <aside style={{
-        width: 220, flexShrink: 0,
-        background: sidebarBg,
-        display: 'flex', flexDirection: 'column',
-        position: 'sticky', top: 0, height: '100vh',
-      }}>
+      <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' }}>
 
         {/* Logo */}
         <div style={{ padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -129,8 +124,12 @@ export default function DashboardPage() {
                 width: '100%', display: 'flex', alignItems: 'center', gap: 8,
                 padding: '8px 9px', borderRadius: 7, marginBottom: 1,
                 border: 'none', fontSize: 13,
-                background: isActive(item.path) ? 'rgba(0,128,96,0.2)' : 'transparent',
-                color: isActive(item.path) ? '#34D399' : 'rgba(255,255,255,0.45)',
+                background: isActive(item.path)
+                  ? item.id === 'upgrade' ? 'rgba(124,58,237,0.2)' : 'rgba(0,128,96,0.2)'
+                  : 'transparent',
+                color: isActive(item.path)
+                  ? item.id === 'upgrade' ? '#A78BFA' : '#34D399'
+                  : item.id === 'upgrade' ? 'rgba(167,139,250,0.6)' : 'rgba(255,255,255,0.45)',
                 cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
                 transition: 'all 0.15s', textAlign: 'left',
               }}
@@ -143,38 +142,24 @@ export default function DashboardPage() {
 
         {/* Bottom */}
         <div style={{ padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <button
-            onClick={toggleLanguage}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}
-          >
+          <button onClick={toggleLanguage} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}>
             🌐 {language === 'en' ? 'Kiswahili' : 'English'}
           </button>
-          <button
-            onClick={toggleTheme}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}
-          >
+          <button onClick={toggleTheme} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}>
             {isDark ? <Sun size={12} /> : <Moon size={12} />}
             {isDark ? t('Light mode', 'Mwanga') : t('Dark mode', 'Giza')}
           </button>
-          <button
-            onClick={handleSignOut}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}
-          >
+          <button onClick={handleSignOut} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}>
             <LogOut size={12} /> {t('Sign out', 'Toka')}
           </button>
         </div>
       </aside>
 
-      {/* ── Main content ─────────────────────────────────────── */}
+      {/* ── Main ─────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
         {/* Top bar */}
-        <div style={{
-          background: surface, borderBottom: `1px solid ${border}`,
-          padding: '12px 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 10,
-        }}>
+        <div style={{ background: surface, borderBottom: `1px solid ${border}`, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>
             {t('Overview', 'Muhtasari')}
           </div>
@@ -182,32 +167,26 @@ export default function DashboardPage() {
             {websiteUrl && (
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(`${t('Check out my business online', 'Angalia biashara yangu mtandaoni')}: ${websiteUrl}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                target="_blank" rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 7, border: `1px solid ${border}`, background: surface, color: textPrimary, textDecoration: 'none', fontSize: 13, fontWeight: 500 }}
               >
-                <Share2 size={13} />
-                {t('Share', 'Shiriki')}
+                <Share2 size={13} /> {t('Share', 'Shiriki')}
               </a>
             )}
             {websiteUrl && (
               <a
-                href={websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={websiteUrl} target="_blank" rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 7, border: 'none', background: accent, color: 'white', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}
               >
-                <ExternalLink size={13} />
-                {t('View website', 'Angalia tovuti')}
+                <ExternalLink size={13} /> {t('View website', 'Angalia tovuti')}
               </a>
             )}
           </div>
         </div>
 
-        {/* Page content */}
+        {/* Content */}
         <main style={{ flex: 1, padding: '28px 28px 60px', maxWidth: 860, width: '100%', margin: '0 auto' }}>
 
-          {/* Greeting */}
           <div style={{ marginBottom: 24 }}>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px', marginBottom: 4 }}>
               {t(`Good day, ${firstName} 👋`, `Habari, ${firstName} 👋`)}
@@ -235,25 +214,15 @@ export default function DashboardPage() {
               <p style={{ fontSize: 14, color: textMuted, marginBottom: 28, lineHeight: 1.6 }}>
                 {t('Chat with our AI assistant and get a professional website in 2 minutes.', 'Zungumza na msaidizi wetu wa AI na upate tovuti ya kitaalamu kwa dakika 2.')}
               </p>
-              <Link
-                to="/onboarding"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 8, background: accent, color: 'white', textDecoration: 'none', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
-              >
-                <Sparkles size={16} />
-                {t('Build my website', 'Jenga tovuti yangu')}
+              <Link to="/onboarding" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 8, background: accent, color: 'white', textDecoration: 'none', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+                <Sparkles size={16} /> {t('Build my website', 'Jenga tovuti yangu')}
               </Link>
             </div>
 
           ) : (
             <>
               {/* Live alert */}
-              <div style={{
-                background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5',
-                border: `1px solid ${isDark ? 'rgba(0,128,96,0.25)' : '#B3D9CC'}`,
-                borderRadius: 10, padding: '14px 18px',
-                display: 'flex', alignItems: 'center', gap: 14,
-                marginBottom: 20,
-              }}>
+              <div style={{ background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.25)' : '#B3D9CC'}`, borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 8, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Globe size={16} color="white" />
                 </div>
@@ -267,7 +236,7 @@ export default function DashboardPage() {
                 </div>
                 <button
                   onClick={handleCopy}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 7, border: `1px solid ${border}`, background: surface, color: textPrimary, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, transition: 'all 0.2s' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 7, border: `1px solid ${border}`, background: surface, color: textPrimary, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}
                 >
                   {copied ? <CheckCheck size={13} color={accent} /> : <Copy size={13} />}
                   {copied ? t('Copied!', 'Imenakiliwa!') : t('Copy link', 'Nakili')}
@@ -295,14 +264,10 @@ export default function DashboardPage() {
               {/* Bottom two col */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12 }}>
 
-                {/* Website preview */}
                 <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: 18 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{t('Your website', 'Tovuti yako')}</div>
-                    <button
-                      onClick={() => navigate('/dashboard/website')}
-                      style={{ fontSize: 12, color: accent, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-                    >
+                    <button onClick={() => navigate('/dashboard/website')} style={{ fontSize: 12, color: accent, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
                       {t('Edit with AI', 'Hariri na AI')} ↗
                     </button>
                   </div>
@@ -313,18 +278,11 @@ export default function DashboardPage() {
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>{business.address}</div>
                     </div>
                   </div>
-                  <a
-                    href={websiteUrl || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '10px', borderRadius: 7, border: 'none', background: accent, color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    <ExternalLink size={13} />
-                    {t('View full website', 'Angalia tovuti kamili')}
+                  <a href={websiteUrl || '#'} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '10px', borderRadius: 7, border: 'none', background: accent, color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>
+                    <ExternalLink size={13} /> {t('View full website', 'Angalia tovuti kamili')}
                   </a>
                 </div>
 
-                {/* Share card */}
                 <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: 18 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 8 }}>
                     {t('Grow your business', 'Kukuza biashara yako')}
@@ -334,12 +292,10 @@ export default function DashboardPage() {
                   </p>
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(`${t('Check out my business online', 'Angalia biashara yangu mtandaoni')}: ${websiteUrl}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target="_blank" rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', padding: '10px', borderRadius: 7, border: 'none', background: '#25D366', color: 'white', fontSize: 13, fontWeight: 600, textDecoration: 'none', fontFamily: "'DM Sans', sans-serif", marginBottom: 10 }}
                   >
-                    <MessageCircle size={14} />
-                    {t('Share on WhatsApp', 'Shiriki kwenye WhatsApp')}
+                    <MessageCircle size={14} /> {t('Share on WhatsApp', 'Shiriki kwenye WhatsApp')}
                   </a>
                   <button
                     onClick={handleCopy}
