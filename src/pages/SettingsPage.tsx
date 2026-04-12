@@ -8,6 +8,10 @@ import { getMyBusiness, updateBusiness } from '@/lib/db'
 import { buildPhotoPrompt } from '@/lib/photos'
 import type { Business } from '@/lib/db'
 import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } from 'lucide-react'
+import MobileNav from '@/components/layout/MobileNav'
+
+// inside the return, just before the last closing </div>:
+<MobileNav />
 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()

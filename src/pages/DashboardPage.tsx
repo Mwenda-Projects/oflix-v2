@@ -12,6 +12,10 @@ import { useAuth } from '@/context/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, getLeadStats } from '@/lib/db'
 import type { Business } from '@/lib/db'
+import MobileNav from '@/components/layout/MobileNav'
+
+// inside the return, just before the last closing </div>:
+<MobileNav />
 
 const CATEGORY_EMOJI: Record<string, string> = {
   retail: '🛍️', food: '🍽️', salon: '💇', clinic: '🏥',
