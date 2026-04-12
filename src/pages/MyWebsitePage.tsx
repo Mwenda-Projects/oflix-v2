@@ -4,6 +4,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
+import { buildPhotoPrompt } from '@/lib/photos'
 import type { Business } from '@/lib/db'
 import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock } from 'lucide-react'
 
@@ -92,6 +93,8 @@ BUSINESS DETAILS:
 - Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
 
 BASE DESIGN: ${styles[business.category] || styles.other}
+
+${buildPhotoPrompt(business.category)}
 
 OWNER'S REQUESTED CHANGE: "${editPrompt}"
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
 import { createBusiness, updateBusiness } from '@/lib/db'
+import { buildPhotoPrompt } from '@/lib/photos'
 import { ArrowRight, Sparkles } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ const STEPS = [
     field: 'hours',
     question: 'What are your working hours?',
     placeholder: 'e.g. Mon–Sat 8am–7pm',
-    hint: "Not sure yet? Just type \"open\" and you can update it later.",
+    hint: "Not sure yet? Just type 'open' and you can update it later.",
   },
 ]
 
@@ -96,6 +97,8 @@ BUSINESS DETAILS:
 
 DESIGN DIRECTION: ${style}
 
+${buildPhotoPrompt(cat)}
+
 STRICT RULES:
 1. Return ONLY raw HTML. No markdown. No backticks. No explanation.
 2. Complete single file: <html>, <head> with Google Fonts, all CSS in <style>, all JS in <script>.
@@ -144,7 +147,7 @@ export default function OnboardingPage() {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
 
   const currentStep = STEPS[step]
-
+  
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100)
   }, [step])

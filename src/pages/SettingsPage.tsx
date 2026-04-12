@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import { useAuth } from '@/context/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
+import { buildPhotoPrompt } from '@/lib/photos'
 import type { Business } from '@/lib/db'
 import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } from 'lucide-react'
 
@@ -82,6 +83,9 @@ BUSINESS DETAILS:
 - Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
 
 DESIGN DIRECTION: ${style}
+
+${buildPhotoPrompt(business.category)}
+
 IMPORTANT: Create a COMPLETELY DIFFERENT design from before. New layout, new colors, new feel — same business details.
 
 STRICT RULES:
