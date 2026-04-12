@@ -10,7 +10,6 @@ import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckC
 import MobileNav from '@/components/layout/MobileNav'
 
 // inside the return, just before the last closing </div>:
-<MobileNav />
 
 type Device = 'mobile' | 'tablet' | 'desktop'
 
@@ -310,8 +309,9 @@ STRICT RULES:
           )}
         </div>
       </div>
-
+      
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}`}</style>
+      <MobileNav />
     </div>
   )
 }

@@ -11,7 +11,6 @@ import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } 
 import MobileNav from '@/components/layout/MobileNav'
 
 // inside the return, just before the last closing </div>:
-<MobileNav />
 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
@@ -348,9 +347,11 @@ STRICT RULES:
             )}
           </div>
         </Section>
+        
 
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <MobileNav />
     </div>
   )
 }

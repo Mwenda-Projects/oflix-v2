@@ -15,7 +15,7 @@ import type { Business } from '@/lib/db'
 import MobileNav from '@/components/layout/MobileNav'
 
 // inside the return, just before the last closing </div>:
-<MobileNav />
+
 
 const CATEGORY_EMOJI: Record<string, string> = {
   retail: '🛍️', food: '🍽️', salon: '💇', clinic: '🏥',
@@ -346,6 +346,7 @@ export default function DashboardPage() {
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+      <MobileNav />
     </div>
   )
 }
