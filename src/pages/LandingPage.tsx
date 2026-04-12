@@ -3,7 +3,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import {
   ArrowRight, MessageCircle, MapPin, Globe,
-  Zap, Shield, Smartphone, Check, Moon, Sun,
+  Zap, Shield, Smartphone, Check, Moon, Sun, Menu,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -14,7 +14,7 @@ const accentBorder = '#B3D9CC'
 export default function LandingPage() {
   const { isDark, toggleTheme } = useTheme()
   const { t, language, toggleLanguage } = useLanguage()
-  const [] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const bg = isDark ? '#0D0D12' : '#FFFFFF'
   const surface = isDark ? '#111318' : '#FFFFFF'
@@ -63,6 +63,22 @@ export default function LandingPage() {
           </a>
         </div>
 
+        <button
+          onClick={() => setIsMenuOpen(prev => !prev)}
+          className="mobile-menu-toggle"
+          style={{
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            padding: 8,
+            borderRadius: 8,
+            color: textMuted,
+          }}
+          aria-label={isMenuOpen ? t('Close menu', 'Funga menyu') : t('Open menu', 'Fungua menyu')}
+        >
+          <Menu size={18} />
+        </button>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={toggleLanguage} style={{ fontSize: 12, color: textMuted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: '4px 8px' }}>
             {language === 'en' ? 'SW' : 'EN'}
@@ -83,6 +99,27 @@ export default function LandingPage() {
           </Link>
         </div>
       </nav>
+
+      {isMenuOpen && (
+        <div style={{
+          background: isDark ? 'rgba(13,13,18,0.95)' : 'rgba(255,255,255,0.95)',
+          borderBottom: `1px solid ${border}`,
+          padding: '10px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}>
+          <a href="#how-it-works" style={{ fontSize: 14, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
+            {t('How it works', 'Jinsi inavyofanya kazi')}
+          </a>
+          <a href="#features" style={{ fontSize: 14, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
+            {t('Features', 'Vipengele')}
+          </a>
+          <a href="#pricing" style={{ fontSize: 14, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
+            {t('Pricing', 'Bei')}
+          </a>
+        </div>
+      )}
 
       {/* ── Hero ────────────────────────────────────────────── */}
       <section style={{ padding: '80px 24px 60px', textAlign: 'center', maxWidth: 760, margin: '0 auto' }}>

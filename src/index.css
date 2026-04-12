@@ -216,6 +216,9 @@ input, textarea, select {
 /* ── ─────────────────────────────────────────────────────────── */
 
 /* Large tablets and small laptops — 1024px and below */
+.mobile-menu-toggle {
+  display: none;
+}
 @media (max-width: 1024px) {
   .dashboard-sidebar {
     width: 180px;
@@ -236,6 +239,14 @@ input, textarea, select {
 
 /* Tablets — 768px and below */
 @media (max-width: 768px) {
+
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex !important;
+  }
 
   /* Hide sidebar on tablet — show bottom nav instead */
   .dashboard-sidebar {
