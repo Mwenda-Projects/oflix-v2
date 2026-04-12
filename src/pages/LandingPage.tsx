@@ -343,52 +343,52 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
             {[
               {
-                name: t('Starter', 'Mwanzo'),
+                name: t('Free', 'Bure'),
                 price: t('Free', 'Bure'),
                 period: '',
                 desc: t('Get online and let customers find you.', 'Ingia mtandaoni na wateja wakupate.'),
                 features: [
-                  t('Professional website', 'Tovuti ya kitaalamu'),
+                  t('Professional AI-generated website', 'Tovuti ya AI ya kitaalamu'),
                   t('WhatsApp contact button', 'Kitufe cha WhatsApp'),
                   t('Google Maps location', 'Eneo la Google Maps'),
                   t('Mobile-friendly design', 'Muundo wa simu'),
-                  t('Your own website link', 'Kiungo chako cha tovuti'),
+                  t('Your own shareable link', 'Kiungo chako cha kushiriki'),
                 ],
                 cta: t('Start free', 'Anza bure'),
                 href: '/signup',
                 highlight: false,
               },
               {
-                name: t('Business', 'Biashara'),
-                price: 'KSh 999',
+                name: t('Basic', 'Msingi'),
+                price: 'KES 499',
                 period: t('/month', '/mwezi'),
-                desc: t('For businesses serious about growing online.', 'Kwa biashara zinazojali kukua mtandaoni.'),
+                desc: t('Keep your website live and track your customers.', 'Weka tovuti yako hai na fuatilia wateja wako.'),
                 features: [
-                  t('Everything in Starter', 'Kila kitu katika Mwanzo'),
-                  t('Analytics — see who visits', 'Takwimu — ona anayekutembelea'),
-                  t('Business hours display', 'Uonyeshaji wa masaa ya biashara'),
-                  t('Priority support', 'Msaada wa kipaumbele'),
-                  t('Custom domain coming soon', 'Kikoa maalum kinakuja hivi karibuni'),
+                  t('Everything in Free', 'Kila kitu katika Bure'),
+                  t('Website stays live forever', 'Tovuti inabaki hai daima'),
+                  t('Visitor analytics dashboard', 'Dashibodi ya takwimu za wageni'),
+                  t('WhatsApp & directions tracking', 'Ufuatiliaji wa WhatsApp na mwelekeo'),
+                  t('Pay with M-Pesa', 'Lipa na M-Pesa'),
                 ],
-                cta: t('Get started', 'Anza sasa'),
-                href: '/signup?plan=business',
-                highlight: true,
+                cta: t('Get Basic', 'Pata Msingi'),
+                href: '/signup?plan=basic',
+                highlight: false,
               },
               {
-                name: t('Growth', 'Ukuaji'),
-                price: 'KSh 2,499',
+                name: t('Pro', 'Pro'),
+                price: 'KES 999',
                 period: t('/month', '/mwezi'),
-                desc: t('For established businesses ready to scale.', 'Kwa biashara zilizoimara zinazotaka kukua.'),
+                desc: t('Edit your website with AI anytime you want.', 'Hariri tovuti yako na AI wakati wowote.'),
                 features: [
-                  t('Everything in Business', 'Kila kitu katika Biashara'),
-                  t('Product catalogue', 'Katalogi ya bidhaa'),
-                  t('Customer enquiry forms', 'Fomu za maswali ya wateja'),
-                  t('Up to 3 locations', 'Hadi maeneo 3'),
-                  t('Monthly performance report', 'Ripoti ya utendaji ya kila mwezi'),
+                  t('Everything in Basic', 'Kila kitu katika Msingi'),
+                  t('Edit website with AI anytime', 'Hariri tovuti na AI wakati wowote'),
+                  t('Regenerate full new design', 'Jenga upya muundo mpya kabisa'),
+                  t('Quick edits — colors, layout, sections', 'Mabadiliko ya haraka — rangi, mpangilio'),
+                  t('Priority support', 'Msaada wa kipaumbele'),
                 ],
-                cta: t('Contact us', 'Wasiliana nasi'),
-                href: '/signup?plan=growth',
-                highlight: false,
+                cta: t('Get Pro', 'Pata Pro'),
+                href: '/signup?plan=pro',
+                highlight: true,
               },
             ].map(tier => (
               <div key={tier.name} style={{
@@ -445,7 +445,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: 'center', fontSize: 13, color: textMuted, marginTop: 24 }}>
-            🇰🇪 {t('All prices in Kenyan Shillings. M-Pesa payments coming soon.', 'Bei zote ni Shilingi za Kenya. Malipo ya M-Pesa yanakuja hivi karibuni.')}
+            🇰🇪 {t('All prices in Kenyan Shillings. Pay with M-Pesa — no credit card needed.', 'Bei zote ni Shilingi za Kenya. Lipa na M-Pesa — hakuna kadi ya benki inayohitajika.')}
           </p>
         </div>
       </section>
