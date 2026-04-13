@@ -14,9 +14,6 @@ import { getMyBusiness, getLeadStats } from '@/lib/db'
 import type { Business } from '@/lib/db'
 import MobileNav from '@/components/layout/MobileNav'
 
-// inside the return, just before the last closing </div>:
-
-
 const CATEGORY_EMOJI: Record<string, string> = {
   retail: '🛍️', food: '🍽️', salon: '💇', clinic: '🏥',
   school: '📚', transport: '🚌', construction: '🏗️',
@@ -93,9 +90,26 @@ export default function DashboardPage() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: mainBg, fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        .dash-sidebar { width: 220px; flex-shrink: 0; }
+        .dash-main { flex: 1; min-width: 0; overflow-x: hidden; }
+        .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .dash-two-col { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
+        @media (max-width: 900px) {
+          .dash-two-col { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 768px) {
+          .dash-sidebar { display: none !important; }
+          .dash-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          .dash-main { padding-bottom: 80px; }
+        }
+        @media (max-width: 480px) {
+          .dash-stats { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       {/* ── Sidebar ─────────────────────────────────────────── */}
-      <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' }}>
+      <aside className="dash-sidebar" style={{ background: sidebarBg, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' }}>
 
         <div style={{ padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
@@ -171,7 +185,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div className="dash-main" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
         <div style={{ background: surface, borderBottom: `1px solid ${border}`, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>{t('Overview', 'Muhtasari')}</div>
@@ -275,7 +289,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+              <div className="dash-stats">
                 {[
                   { label: t('Visitors today', 'Wageni leo'), value: stats.pageViews, icon: Eye, color: accent, lightBg: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', trend: t('Total page views', 'Jumla ya maoni') },
                   { label: t('WhatsApp taps', 'Mabonyezo ya WhatsApp'), value: stats.whatsappTaps, icon: MessageCircle, color: '#25D366', lightBg: isDark ? 'rgba(37,211,102,0.08)' : '#F0FBF4', trend: t('People who messaged you', 'Watu waliokutumia ujumbe') },
@@ -293,7 +307,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Bottom two col */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12 }}>
+              <div className="dash-two-col">
 
                 <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: 18 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -345,8 +359,8 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
       <MobileNav />
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </div>
   )
 }
