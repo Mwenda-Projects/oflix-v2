@@ -6,10 +6,7 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
 import { buildPhotoPrompt } from '@/lib/photos'
 import type { Business } from '@/lib/db'
-import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock } from 'lucide-react'
-import MobileNav from '@/components/layout/MobileNav'
-
-// inside the return, just before the last closing </div>:
+import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp } from 'lucide-react'
 
 type Device = 'mobile' | 'tablet' | 'desktop'
 
@@ -41,6 +38,7 @@ export default function MyWebsitePage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
 
   useEffect(() => {
     getMyBusiness().then(biz => {
@@ -60,10 +58,7 @@ export default function MyWebsitePage() {
 
   const handleEdit = async (editPrompt: string) => {
     if (!business || !editPrompt.trim()) return
-    if (!subscription.canEdit) {
-      navigate('/upgrade')
-      return
-    }
+    if (!subscription.canEdit) { navigate('/upgrade'); return }
 
     setIsGenerating(true)
     setMessage(null)
@@ -148,51 +143,73 @@ STRICT RULES:
   const inputBg = isDark ? '#111' : '#FFF'
 
   if (loading) return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg }}>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg, minHeight: '100vh' }}>
       <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${accent}`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: bg, fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', height: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', background: bg, fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', paddingBottom: 70 }}>
+
+      <style>{`
+        .mwp-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 120px); }
+        .mwp-preview { flex: 1; overflow: auto; }
+        .mwp-panel { width: 300px; flex-shrink: 0; overflow-y: auto; }
+        .mwp-topbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; flex-wrap: nowrap; overflow-x: auto; }
+        .mwp-device-btns { display: flex; }
+        .mwp-copy-btn { display: flex; }
+        @media (max-width: 768px) {
+          .mwp-layout { flex-direction: column; height: auto; overflow: visible; }
+          .mwp-preview { min-height: 60vh; }
+          .mwp-panel { width: 100%; border-left: none !important; border-top: 1px solid ${border}; max-height: none; }
+          .mwp-device-btns { display: none; }
+          .mwp-copy-btn { display: none; }
+          .mwp-topbar { padding: 8px 12px; gap: 6px; }
+        }
+      `}</style>
 
       {/* Top bar */}
-      <div style={{ background: surface, borderBottom: `1px solid ${border}`, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: isDark ? '#111' : '#F5F5F5', border: `1px solid ${border}`, borderRadius: 8, padding: '7px 12px', minWidth: 0 }}>
+      <div className="mwp-topbar" style={{ background: surface, borderBottom: `1px solid ${border}`, flexShrink: 0 }}>
+
+        {/* URL */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, background: isDark ? '#111' : '#F5F5F5', border: `1px solid ${border}`, borderRadius: 8, padding: '7px 10px' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#30D158', flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: textMuted, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+          <span style={{ fontSize: 11, color: textMuted, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
             {websiteUrl || 'No website yet'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', background: isDark ? '#111' : '#F5F5F5', borderRadius: 8, border: `1px solid ${border}`, overflow: 'hidden' }}>
+        {/* Device switcher — hidden on mobile */}
+        <div className="mwp-device-btns" style={{ background: isDark ? '#111' : '#F5F5F5', borderRadius: 8, border: `1px solid ${border}`, overflow: 'hidden' }}>
           {([{ id: 'mobile', icon: Smartphone }, { id: 'tablet', icon: Tablet }, { id: 'desktop', icon: Monitor }] as { id: Device; icon: any }[]).map(d => (
-            <button key={d.id} onClick={() => setDevice(d.id)} style={{ width: 36, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', background: device === d.id ? accent : 'transparent', color: device === d.id ? 'white' : textMuted, transition: 'all 0.15s' }}>
+            <button key={d.id} onClick={() => setDevice(d.id)} style={{ width: 36, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', background: device === d.id ? accent : 'transparent', color: device === d.id ? 'white' : textMuted }}>
               <d.icon size={14} />
             </button>
           ))}
         </div>
 
-        <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: `1px solid ${border}`, background: surface, color: textPrimary, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
+        {/* Copy — hidden on mobile */}
+        <button className="mwp-copy-btn" onClick={handleCopy} style={{ alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: `1px solid ${border}`, background: surface, color: textPrimary, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
           {copied ? <CheckCheck size={13} color={accent} /> : <Copy size={13} />}
           {copied ? t('Copied!', 'Imenakiliwa!') : t('Copy link', 'Nakili')}
         </button>
 
+        {/* Open — always visible */}
         <a href={websiteUrl || '#'} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: 'none', background: accent, color: 'white', fontSize: 12, fontWeight: 600, textDecoration: 'none', flexShrink: 0 }}>
           <ExternalLink size={13} /> {t('Open', 'Fungua')}
         </a>
       </div>
 
-      {/* Main area */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* Main layout */}
+      <div className="mwp-layout">
 
-        {/* Preview */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', overflow: 'auto', background: isDark ? '#0A0A0B' : '#E8E8E8' }}>
+        {/* Preview pane */}
+        <div className="mwp-preview" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 16, background: isDark ? '#0A0A0B' : '#E8E8E8' }}>
           {generatedHtml ? (
-            <div style={{ width: DEVICE_WIDTHS[device], maxWidth: '100%', minHeight: 500, background: 'white', borderRadius: device === 'desktop' ? 0 : 12, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.2)', transition: 'width 0.3s ease', flexShrink: 0 }}>
+            <div style={{ width: DEVICE_WIDTHS[device], maxWidth: '100%', minHeight: 400, background: 'white', borderRadius: device === 'desktop' ? 0 : 12, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.2)', transition: 'width 0.3s ease' }}>
               {isGenerating ? (
-                <div style={{ width: '100%', height: '100%', minHeight: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#fff' }}>
+                <div style={{ width: '100%', minHeight: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#fff' }}>
                   <div style={{ width: 48, height: 48, borderRadius: 12, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 2s ease infinite' }}>
                     <Sparkles size={22} color="white" />
                   </div>
@@ -201,47 +218,52 @@ STRICT RULES:
                   </p>
                 </div>
               ) : (
-                <iframe srcDoc={generatedHtml} style={{ width: '100%', height: '100%', minHeight: 600, border: 'none', display: 'block' }} title="Website preview" sandbox="allow-scripts allow-same-origin allow-popups" />
+                <iframe srcDoc={generatedHtml} style={{ width: '100%', height: '100%', minHeight: 500, border: 'none', display: 'block' }} title="Website preview" sandbox="allow-scripts allow-same-origin allow-popups" />
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, textAlign: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, textAlign: 'center', gap: 12 }}>
               <div style={{ fontSize: 48 }}>🌐</div>
               <h3 style={{ fontSize: 16, fontWeight: 600, color: textPrimary }}>{t('No website yet', 'Bado huna tovuti')}</h3>
+              <p style={{ fontSize: 13, color: textMuted }}>{t('Complete onboarding to generate your website.', 'Kamilisha mchakato wa kuanza.')}</p>
             </div>
           )}
         </div>
 
         {/* AI Editor panel */}
-        <div style={{ width: 300, flexShrink: 0, background: surface, borderLeft: `1px solid ${border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="mwp-panel" style={{ background: surface, borderLeft: `1px solid ${border}` }}>
 
-          <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${border}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+          {/* Panel header — tappable on mobile to expand/collapse */}
+          <div
+            onClick={() => setEditorOpen(!editorOpen)}
+            style={{ padding: '14px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <Sparkles size={14} color={subscription.canEdit ? accent : textMuted} />
               <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>{t('Edit with AI', 'Hariri na AI')}</span>
               {!subscription.canEdit && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(124,58,237,0.12)', color: '#7C3AED', marginLeft: 'auto' }}>PRO</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(124,58,237,0.12)', color: '#7C3AED' }}>PRO</span>
               )}
             </div>
-            <p style={{ fontSize: 11, color: textMuted, lineHeight: 1.5 }}>
-              {subscription.canEdit
-                ? t('Tell the AI what to change and your website updates instantly.', 'Mwambie AI nini kibadilishe na tovuti yako itasasishwa mara moja.')
-                : t('Upgrade to Pro to edit your website with AI.', 'Boresha hadi Pro kuhariri tovuti yako na AI.')}
-            </p>
+            <div style={{ color: textMuted }}>
+              {editorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
           </div>
 
-          {/* Pro gate overlay */}
-          {!subscription.canEdit ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center', gap: 16 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Lock size={24} color="#7C3AED" />
-              </div>
-              <div>
+          {/* Panel body — always visible on desktop, collapsible on mobile */}
+          <div style={{ display: editorOpen ? 'block' : 'none' }} className="mwp-panel-body">
+            <style>{`.mwp-panel-body { display: block !important; } @media (max-width: 768px) { .mwp-panel-body { display: ${editorOpen ? 'block' : 'none'} !important; } }`}</style>
+
+            {!subscription.canEdit ? (
+              <div style={{ padding: 24, textAlign: 'center' }}>
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <Lock size={24} color="#7C3AED" />
+                </div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
                   {t('Pro feature', 'Kipengele cha Pro')}
                 </div>
                 <p style={{ fontSize: 12, color: textMuted, lineHeight: 1.6, marginBottom: 20 }}>
-                  {t('AI website editing is available on the Pro plan (KES 999/month). Upgrade to edit colors, layout, sections and more.', 'Kuhariri tovuti kwa AI kunapatikana kwenye mpango wa Pro (KES 999/mwezi). Boresha kuhariri rangi, mpangilio, sehemu na zaidi.')}
+                  {t('AI website editing is available on the Pro plan (KES 999/month).', 'Kuhariri tovuti kwa AI kunapatikana kwenye mpango wa Pro (KES 999/mwezi).')}
                 </p>
                 <button
                   onClick={() => navigate('/upgrade')}
@@ -251,52 +273,50 @@ STRICT RULES:
                   {t('Upgrade to Pro', 'Boresha hadi Pro')}
                 </button>
               </div>
-            </div>
-          ) : (
-            <>
-              {message && (
-                <div style={{ margin: '10px 12px 0', padding: '8px 12px', borderRadius: 7, background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, fontSize: 12, color: accent, fontWeight: 500 }}>
-                  ✓ {message}
-                </div>
-              )}
+            ) : (
+              <div style={{ padding: 12 }}>
+                {message && (
+                  <div style={{ marginBottom: 10, padding: '8px 12px', borderRadius: 7, background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, fontSize: 12, color: accent, fontWeight: 500 }}>
+                    ✓ {message}
+                  </div>
+                )}
 
-              <div style={{ padding: '12px 12px 8px', borderBottom: `1px solid ${border}` }}>
+                {/* Quick edits */}
                 <p style={{ fontSize: 11, fontWeight: 600, color: textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {t('Quick edits', 'Mabadiliko ya haraka')}
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 14 }}>
                   {QUICK_EDITS.map(edit => (
                     <button
                       key={edit}
                       onClick={() => handleEdit(edit)}
                       disabled={isGenerating}
-                      style={{ padding: '7px 10px', borderRadius: 7, textAlign: 'left', border: `1px solid ${border}`, background: 'transparent', color: textPrimary, fontSize: 12, cursor: isGenerating ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: isGenerating ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}
+                      style={{ padding: '8px 10px', borderRadius: 7, textAlign: 'left', border: `1px solid ${border}`, background: 'transparent', color: textPrimary, fontSize: 11, cursor: isGenerating ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: isGenerating ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, lineHeight: 1.4 }}
                     >
                       {edit}
-                      <RefreshCw size={11} color={textMuted} style={{ flexShrink: 0 }} />
+                      <RefreshCw size={10} color={textMuted} style={{ flexShrink: 0 }} />
                     </button>
                   ))}
                 </div>
-              </div>
 
-              <div style={{ flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {/* Custom prompt */}
+                <p style={{ fontSize: 11, fontWeight: 600, color: textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {t('Custom edit', 'Mabadiliko maalum')}
                 </p>
                 <textarea
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
-                  placeholder={t('e.g. Add a photo gallery, change font, make footer green...', 'mf. Ongeza picha, badilisha fonti, fanya footer iwe ya kijani...')}
-                  rows={4}
+                  placeholder={t('e.g. Add a photo gallery, change font, make footer green...', 'mf. Ongeza picha, badilisha fonti...')}
+                  rows={3}
                   disabled={isGenerating}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${border}`, background: inputBg, color: textPrimary, fontSize: 12, fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'none', lineHeight: 1.6, opacity: isGenerating ? 0.5 : 1 }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${border}`, background: inputBg, color: textPrimary, fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'none', lineHeight: 1.6, marginBottom: 8 }}
                   onFocus={e => e.target.style.borderColor = accent}
                   onBlur={e => e.target.style.borderColor = border}
                 />
                 <button
                   onClick={() => handleEdit(prompt)}
                   disabled={!prompt.trim() || isGenerating}
-                  style={{ padding: '10px', borderRadius: 8, border: 'none', background: prompt.trim() && !isGenerating ? accent : (isDark ? '#1A1A1A' : '#E5E5E5'), color: prompt.trim() && !isGenerating ? 'white' : textMuted, fontSize: 13, fontWeight: 600, cursor: prompt.trim() && !isGenerating ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  style={{ width: '100%', padding: '11px', borderRadius: 8, border: 'none', background: prompt.trim() && !isGenerating ? accent : (isDark ? '#1A1A1A' : '#E5E5E5'), color: prompt.trim() && !isGenerating ? 'white' : textMuted, fontSize: 13, fontWeight: 600, cursor: prompt.trim() && !isGenerating ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
                   {isGenerating ? (
                     <><div style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />{t('Updating...', 'Inasasisha...')}</>
@@ -305,13 +325,22 @@ STRICT RULES:
                   )}
                 </button>
               </div>
-            </>
-          )}
+            )}
+          </div>
+
+          {/* On desktop — always show panel body */}
+          <style>{`
+            @media (min-width: 769px) {
+              .mwp-panel-body { display: block !important; }
+            }
+          `}</style>
         </div>
       </div>
-      
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}`}</style>
-      <MobileNav />
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+      `}</style>
     </div>
   )
 }
