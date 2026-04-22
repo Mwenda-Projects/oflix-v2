@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
 import { createBusiness, updateBusiness } from '@/lib/db'
 import { buildPhotoPrompt } from '@/lib/photos'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight, Sparkles, Phone, MessageCircle } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────
 interface Collected {
@@ -17,37 +17,56 @@ interface Collected {
 }
 
 // ── Steps ──────────────────────────────────────────────────────
+// Step 4 is special — it has a "same as above" option
+// so we handle it separately in the component
 const STEPS = [
   {
     field: 'businessName',
     question: "What's your business name?",
     placeholder: 'e.g. Mama Grace Salon',
     hint: 'Just type the name your customers know you by.',
+    type: 'text',
+    icon: null,
   },
   {
     field: 'description',
     question: 'What does your business offer?',
     placeholder: 'e.g. We do hair styling, braiding and manicures. Walk-ins welcome daily.',
     hint: 'Describe it like you would tell a friend on WhatsApp.',
-    multiline: true,
+    type: 'textarea',
+    icon: null,
   },
   {
     field: 'address',
     question: 'Where are you located?',
     placeholder: 'e.g. Tom Mboya Street, Nairobi CBD',
     hint: 'Your customers need to know where to find you.',
+    type: 'text',
+    icon: null,
   },
   {
     field: 'phone',
-    question: 'What number should customers call or WhatsApp?',
+    question: 'What number should customers call?',
     placeholder: '0712 345 678',
-    hint: 'This will appear on your website as a tap-to-call button.',
+    hint: 'This is the number for phone calls — it will appear as a tap-to-call button on your website.',
+    type: 'tel',
+    icon: 'phone',
+  },
+  {
+    field: 'whatsapp',
+    question: 'What is your WhatsApp number?',
+    placeholder: '0790 123 456',
+    hint: 'Customers will tap this to message you directly on WhatsApp. Can be different from your call number.',
+    type: 'tel',
+    icon: 'whatsapp',
   },
   {
     field: 'hours',
     question: 'What are your working hours?',
     placeholder: 'e.g. Mon–Sat 8am–7pm',
-    hint: "Not sure yet? Just type 'open' and you can update it later.",
+    hint: "Not sure yet? Just type 'flexible' and you can update it later.",
+    type: 'text',
+    icon: null,
   },
 ]
 
@@ -80,10 +99,14 @@ async function generateWebsite(business: Collected): Promise<string> {
     tech: 'modern and minimal — dark background, electric blue. Hero, services, WhatsApp button.',
     other: 'clean and professional — white with a bold colour accent. Hero, about, services, WhatsApp button.',
   }
+
   const cat = business.category || 'other'
   const style = styles[cat] || styles.other
-  const num = (business.phone || '').replace(/\D/g, '').replace(/^0/, '254')
-  const waLink = `https://wa.me/${num}`
+
+  // Phone and WhatsApp are now separate
+  const callNumber = business.phone || ''
+  const waNumber = (business.whatsapp || business.phone || '').replace(/\D/g, '').replace(/^0/, '254')
+  const waLink = `https://wa.me/${waNumber}`
 
   const prompt = `You are a world-class web designer. Build a complete, stunning, mobile-first single-page website for a real Nairobi business.
 
@@ -91,7 +114,7 @@ BUSINESS DETAILS:
 - Name: ${business.businessName}
 - Type: ${cat}
 - Description: ${business.description}
-- Phone: ${business.phone}
+- Call number: ${callNumber}
 - WhatsApp: ${waLink}
 - Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
 
@@ -104,12 +127,14 @@ STRICT RULES:
 2. Complete single file: <html>, <head> with Google Fonts, all CSS in <style>, all JS in <script>.
 3. Mobile-first. Looks perfect on a phone.
 4. Use EXACT business details above — no placeholders ever.
-5. WhatsApp button: ${waLink}
-6. Phone link: tel:${business.phone}
-7. Minimum 4 sections: Hero, Services/About, Contact, Call-to-action.
-8. Smooth scroll and subtle CSS animations.
-9. Small "Powered by OfliX" footer linking to https://oflix.co.ke
-10. Must look like a KES 80,000 website — premium, unique, not a template.`
+5. WhatsApp button must open: ${waLink}
+6. Call button must link to: tel:${callNumber}
+7. If call number and WhatsApp number are different, show BOTH buttons clearly.
+8. Minimum 4 sections: Hero, Services/About, Contact, Call-to-action.
+9. Smooth scroll and subtle CSS animations.
+10. Small "Powered by OfliX" footer linking to https://oflix.co.ke
+11. Must look like a KES 80,000 website — premium, unique, not a template.
+12. Use the provided images prominently — real photos make it look stunning.`
 
   const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
     method: 'POST',
@@ -147,7 +172,8 @@ export default function OnboardingPage() {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
 
   const currentStep = STEPS[step]
-  
+  const isWhatsAppStep = currentStep.field === 'whatsapp'
+
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100)
   }, [step])
@@ -158,7 +184,6 @@ export default function OnboardingPage() {
 
     const next: Collected = { ...collected, [currentStep.field]: val }
     if (currentStep.field === 'description') next.category = detectCategory(val)
-    if (currentStep.field === 'phone') next.whatsapp = val
     setCollected(next)
     setValue('')
 
@@ -167,6 +192,14 @@ export default function OnboardingPage() {
     } else {
       await build(next)
     }
+  }
+
+  // "Same as call number" shortcut on WhatsApp step
+  function handleSameAsPhone() {
+    const next: Collected = { ...collected, whatsapp: collected.phone || '' }
+    setCollected(next)
+    setValue('')
+    setStep(s => s + 1)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -219,7 +252,7 @@ export default function OnboardingPage() {
   const inputFocus = '#008060'
   const accent = '#008060'
 
-  // ── Building screen ──────────────────────────────────────────
+  // ── Building / Done screen ────────────────────────────────────
   if (isBuilding || done) {
     return (
       <div style={{
@@ -268,7 +301,6 @@ export default function OnboardingPage() {
             <p style={{ fontSize: 14, color: textMuted, marginBottom: 20 }}>
               {buildStatus}
             </p>
-            {/* Progress bar */}
             <div style={{
               width: 200, height: 3, borderRadius: 2,
               background: isDark ? '#2A2A2A' : '#E5E5E5',
@@ -349,6 +381,23 @@ export default function OnboardingPage() {
           Step {step + 1} of {STEPS.length}
         </div>
 
+        {/* Icon for phone/whatsapp steps */}
+        {currentStep.icon && (
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            background: currentStep.icon === 'whatsapp'
+              ? 'rgba(37,211,102,0.1)'
+              : 'rgba(0,128,96,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 16,
+          }}>
+            {currentStep.icon === 'whatsapp'
+              ? <MessageCircle size={22} color="#25D366" />
+              : <Phone size={22} color={accent} />
+            }
+          </div>
+        )}
+
         {/* Question */}
         <h1 style={{
           fontSize: 26, fontWeight: 700,
@@ -367,8 +416,47 @@ export default function OnboardingPage() {
           {currentStep.hint}
         </p>
 
+        {/* WhatsApp step — show "Same as call number" shortcut */}
+        {isWhatsAppStep && collected.phone && (
+          <button
+            onClick={handleSameAsPhone}
+            style={{
+              width: '100%', padding: '13px 16px',
+              borderRadius: 10, marginBottom: 12,
+              border: `1.5px dashed ${isDark ? '#2A2A2A' : '#B3D9CC'}`,
+              background: isDark ? 'rgba(0,128,96,0.05)' : '#F1F8F5',
+              color: accent, fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              transition: 'all 0.15s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MessageCircle size={16} color="#25D366" />
+              <span>Same as call number</span>
+            </div>
+            <span style={{
+              fontSize: 13, fontWeight: 700,
+              background: isDark ? 'rgba(0,128,96,0.15)' : 'rgba(0,128,96,0.1)',
+              padding: '3px 10px', borderRadius: 20,
+              color: accent,
+            }}>
+              {collected.phone}
+            </span>
+          </button>
+        )}
+
+        {/* Divider when showing "same as" option */}
+        {isWhatsAppStep && collected.phone && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <div style={{ flex: 1, height: 1, background: isDark ? '#2A2A2A' : '#E5E5E5' }} />
+            <span style={{ fontSize: 12, color: textMuted }}>or enter a different number</span>
+            <div style={{ flex: 1, height: 1, background: isDark ? '#2A2A2A' : '#E5E5E5' }} />
+          </div>
+        )}
+
         {/* Input */}
-        {currentStep.multiline ? (
+        {currentStep.type === 'textarea' ? (
           <textarea
             ref={inputRef as React.RefObject<HTMLTextAreaElement>}
             value={value}
@@ -396,7 +484,7 @@ export default function OnboardingPage() {
         ) : (
           <input
             ref={inputRef as React.RefObject<HTMLInputElement>}
-            type={currentStep.field === 'phone' ? 'tel' : 'text'}
+            type={currentStep.type === 'tel' ? 'tel' : 'text'}
             value={value}
             onChange={e => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
