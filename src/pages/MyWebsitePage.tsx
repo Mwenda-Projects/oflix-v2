@@ -104,7 +104,34 @@ STRICT RULES:
 3. Mobile-first. Minimum 4 sections.
 4. WhatsApp button: ${waLink} — Phone: tel:${business.phone}
 5. Small "Powered by OfliX" footer.
-6. Must look premium and professional.`
+6. Must look premium and professional.
+13. SAVE CONTACT BUTTON — include this in every website:
+    Add a "Save Contact" button that generates and downloads a .vcf file when tapped.
+    The button should be prominently placed in the contact section.
+    Use this exact JavaScript to generate the vcf:
+    function saveContact() {
+      const vcf = [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        'FN:' + businessName,
+        'ORG:' + businessName,
+        'TEL;TYPE=CELL:' + callNumber,
+        'TEL;TYPE=WHATSAPP:' + waNumber,
+        'ADR;TYPE=WORK:;;' + address + ';;;;',
+        'URL:' + websiteUrl,
+        'END:VCARD'
+      ].join('\n');
+      const blob = new Blob([vcf], {type: 'text/vcard'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = businessName + '.vcf';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    Replace businessName, callNumber, waNumber, address, websiteUrl with the actual business values hardcoded as strings.
+    Style the button with a person-add icon (use unicode \u{1F4F1} or similar) and label "Save Contact".
+    Works offline once page is cached.`
 
       const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
         method: 'POST',
