@@ -5,7 +5,7 @@ import {
   ArrowRight, MessageCircle, MapPin, Globe,
   Zap, Shield, Smartphone, Check, Moon, Sun,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const accent = '#008060'
 const accentLight = '#F1F8F5'
@@ -14,7 +14,14 @@ const accentBorder = '#B3D9CC'
 export default function LandingPage() {
   const { isDark, toggleTheme } = useTheme()
   const { t, language, toggleLanguage } = useLanguage()
-  const [] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const bg = isDark ? '#0D0D12' : '#FFFFFF'
   const surface = isDark ? '#111318' : '#FFFFFF'
@@ -31,11 +38,9 @@ export default function LandingPage() {
       {/* ── Responsive styles ──────────────────────────────── */}
       <style>{`
         .oflix-nav-links { display: flex; align-items: center; gap: 24px; }
-        .oflix-nav-right-full { display: flex; align-items: center; gap: 8px; }
         .oflix-nav-login { display: flex; }
         .oflix-nav-lang { display: flex; }
         .pricing-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .features-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
         .how-it-works-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
         @media (max-width: 768px) {
           .oflix-nav-links { display: none !important; }
@@ -47,6 +52,7 @@ export default function LandingPage() {
         @media (max-width: 480px) {
           .oflix-ctas { flex-direction: column !important; align-items: stretch !important; }
           .oflix-ctas a, .oflix-ctas button { text-align: center; justify-content: center !important; }
+          .oflix-final-cta { width: 100%; box-sizing: border-box; }
         }
       `}</style>
 
@@ -72,7 +78,7 @@ export default function LandingPage() {
           <span style={{ fontSize: 16, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px' }}>OfliX</span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav links */}
         <div className="oflix-nav-links">
           <a href="#how-it-works" style={{ fontSize: 14, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
             {t('How it works', 'Jinsi inavyofanya kazi')}
@@ -100,6 +106,7 @@ export default function LandingPage() {
             background: accent, padding: '8px 16px',
             borderRadius: 8, textDecoration: 'none',
             display: 'flex', alignItems: 'center', gap: 5,
+            whiteSpace: 'nowrap',
           }}>
             {t('Get started', 'Anza')} <ArrowRight size={13} />
           </Link>
@@ -107,7 +114,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px 60px', textAlign: 'center', maxWidth: 760, margin: '0 auto' }}>
+      <section style={{ padding: isMobile ? '52px 20px 44px' : '80px 24px 60px', textAlign: 'center', maxWidth: 760, margin: '0 auto' }}>
 
         {/* Kenya badge */}
         <div style={{
@@ -122,7 +129,7 @@ export default function LandingPage() {
 
         {/* Headline */}
         <h1 style={{
-          fontSize: 'clamp(36px, 6vw, 64px)',
+          fontSize: isMobile ? '36px' : 'clamp(36px, 6vw, 64px)',
           fontWeight: 800, lineHeight: 1.1,
           letterSpacing: '-1.5px',
           color: textPrimary,
@@ -135,7 +142,7 @@ export default function LandingPage() {
 
         {/* Subheadline */}
         <p style={{
-          fontSize: 18, color: textMuted, lineHeight: 1.7,
+          fontSize: isMobile ? 16 : 18, color: textMuted, lineHeight: 1.7,
           maxWidth: 560, margin: '0 auto 12px', fontWeight: 400,
         }}>
           {t(
@@ -189,7 +196,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Mock website preview ─────────────────────────── */}
-      <section style={{ padding: '0 24px 80px', maxWidth: 680, margin: '0 auto' }}>
+      <section style={{ padding: isMobile ? '0 20px 60px' : '0 24px 80px', maxWidth: 680, margin: '0 auto' }}>
         <div style={{
           background: cardBg, border: `1px solid ${cardBorder}`,
           borderRadius: 16, overflow: 'hidden',
@@ -202,7 +209,7 @@ export default function LandingPage() {
             borderBottom: `1px solid ${cardBorder}`,
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            <div style={{ display: 'flex', gap: 5 }}>
+            <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
               {['#FF5F57', '#FEBC2E', '#28C840'].map(c => (
                 <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
               ))}
@@ -212,6 +219,7 @@ export default function LandingPage() {
               background: isDark ? '#111' : '#E5E5E5',
               display: 'flex', alignItems: 'center', paddingLeft: 10,
               fontSize: 11, color: textMuted, fontFamily: 'monospace',
+              overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
             }}>
               oflix.co.ke/b/mama-grace-salon
             </div>
@@ -251,15 +259,15 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ─────────────────────────────────── */}
-      <section id="how-it-works" style={{ padding: '80px 24px', background: surfaceAlt }}>
+      <section id="how-it-works" style={{ padding: isMobile ? '60px 20px' : '80px 24px', background: surfaceAlt }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: accent, marginBottom: 10 }}>
             {t('How it works', 'Jinsi inavyofanya kazi')}
           </p>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
             {t('3 steps. 2 minutes. Done.', 'Hatua 3. Dakika 2. Imeisha.')}
           </h2>
-          <p style={{ fontSize: 16, color: textMuted, marginBottom: 52, lineHeight: 1.6 }}>
+          <p style={{ fontSize: isMobile ? 14 : 16, color: textMuted, marginBottom: 52, lineHeight: 1.6 }}>
             {t(
               'No forms to fill. No developer to hire. Just answer a few questions and your website is live.',
               'Hakuna fomu za kujaza. Hakuna msanidi wa kuajiri. Jibu maswali machache tu na tovuti yako iko hai.'
@@ -304,21 +312,21 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ─────────────────────────────────────── */}
-      <section id="features" style={{ padding: '80px 24px', background: surface }}>
+      <section id="features" style={{ padding: isMobile ? '60px 20px' : '80px 24px', background: surface }}>
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: accent, marginBottom: 10 }}>
               {t('What you get', 'Unachopata')}
             </p>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
+            <h2 style={{ fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
               {t('Everything your business needs', 'Kila kitu biashara yako inachohitaji')}
             </h2>
-            <p style={{ fontSize: 16, color: textMuted, maxWidth: 480, margin: '0 auto' }}>
+            <p style={{ fontSize: isMobile ? 14 : 16, color: textMuted, maxWidth: 480, margin: '0 auto' }}>
               {t('No extras. No complications. Just the tools that help your business grow.', 'Hakuna ziada. Hakuna matatizo. Tu zana zinazokusaidia kukua.')}
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
             {[
               { icon: Globe, color: accent, bg: accentLight, title: t('Professional website', 'Tovuti ya kitaalamu'), desc: t('A real website with your own link — not a social media page.', 'Tovuti halisi na kiungo chako — si ukurasa wa mitandao ya kijamii.') },
               { icon: MessageCircle, color: '#25D366', bg: '#F0FBF4', title: t('WhatsApp button', 'Kitufe cha WhatsApp'), desc: t('Customers tap once and land straight in your WhatsApp chat.', 'Wateja wanabonyeza mara moja na wafike moja kwa moja kwenye mazungumzo yako.') },
@@ -348,16 +356,16 @@ export default function LandingPage() {
       </section>
 
       {/* ── Pricing ──────────────────────────────────────── */}
-      <section id="pricing" style={{ padding: '80px 24px', background: surfaceAlt }}>
+      <section id="pricing" style={{ padding: isMobile ? '60px 20px' : '80px 24px', background: surfaceAlt }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: accent, marginBottom: 10 }}>
               {t('Pricing', 'Bei')}
             </p>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
+            <h2 style={{ fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
               {t('Simple, fair pricing.', 'Bei rahisi na ya haki.')}
             </h2>
-            <p style={{ fontSize: 16, color: textMuted }}>
+            <p style={{ fontSize: isMobile ? 14 : 16, color: textMuted }}>
               {t('Start free. Upgrade when ready. No hidden costs.', 'Anza bure. Panda daraja ukiwa tayari. Hakuna gharama zilizofichwa.')}
             </p>
           </div>
@@ -473,24 +481,25 @@ export default function LandingPage() {
       </section>
 
       {/* ── Final CTA ─────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px', textAlign: 'center', background: surface }}>
+      <section style={{ padding: isMobile ? '60px 20px' : '80px 24px', textAlign: 'center', background: surface }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
           <div style={{ fontSize: 48, marginBottom: 20 }}>🚀</div>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
             {t('Ready to get your business online?', 'Uko tayari kuweka biashara yako mtandaoni?')}
           </h2>
-          <p style={{ fontSize: 16, color: textMuted, marginBottom: 32, lineHeight: 1.6 }}>
+          <p style={{ fontSize: isMobile ? 14 : 16, color: textMuted, marginBottom: 32, lineHeight: 1.6 }}>
             {t(
               'Join hundreds of Nairobi businesses already using OfliX to reach more customers.',
               'Jiunge na biashara mamia za Nairobi ambazo tayari zinatumia OfliX kufikia wateja zaidi.'
             )}
           </p>
-          <Link to="/signup" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
+          <Link to="/signup" className="oflix-final-cta" style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '16px 36px', borderRadius: 12,
             background: accent, color: 'white',
-            fontSize: 16, fontWeight: 700, textDecoration: 'none',
+            fontSize: isMobile ? 15 : 16, fontWeight: 700, textDecoration: 'none',
             boxShadow: '0 4px 24px rgba(0,128,96,0.4)',
+            boxSizing: 'border-box',
           }}>
             {t('Get my business online — free', 'Weka biashara yangu mtandaoni — bure')}
             <ArrowRight size={16} />
@@ -513,7 +522,7 @@ export default function LandingPage() {
           <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>OfliX</span>
           <span style={{ fontSize: 12, color: textMuted }}>— {t('Built for Kenya', 'Imetengenezwa kwa Kenya')} 🇰🇪</span>
         </div>
-        <p style={{ fontSize: 12, color: textMuted }}>
+        <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>
           © {new Date().getFullYear()} OfliX. {t('All rights reserved.', 'Haki zote zimehifadhiwa.')}
         </p>
       </footer>

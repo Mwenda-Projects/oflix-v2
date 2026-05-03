@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, ArrowRight, Loader2, Check, Globe, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
@@ -18,6 +18,14 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [focused, setFocused] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const handleSubmit = async () => {
     if (!name || !email || !password) {
@@ -44,17 +52,21 @@ export default function SignupPage() {
     width: '100%', padding: '12px 14px', borderRadius: 10,
     border: `1.5px solid ${focused === field ? '#0A84FF' : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(10,100,220,0.15)'}`,
     background: isDark ? (focused === field ? 'rgba(10,132,255,0.05)' : 'rgba(255,255,255,0.03)') : (focused === field ? 'rgba(10,100,220,0.04)' : 'rgba(10,100,220,0.02)'),
-    color: isDark ? '#E5E5E7' : '#1a1a2e', fontSize: 13,
+    color: isDark ? '#E5E5E7' : '#1a1a2e',
+    fontSize: 16, // 16px prevents iOS auto-zoom on focus
     fontFamily: "'DM Sans', sans-serif", outline: 'none',
     boxSizing: 'border-box' as const, transition: 'all 0.2s',
   })
 
-  const labelStyle: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(10,50,140,0.5)', marginBottom: 6 }
+  const labelStyle: React.CSSProperties = {
+    display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em',
+    textTransform: 'uppercase', color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(10,50,140,0.5)', marginBottom: 6
+  }
 
   if (success) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDark ? '#08090C' : '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-        <div style={{ textAlign: 'center', maxWidth: 400, padding: '0 24px' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDark ? '#08090C' : '#f0f2f8', fontFamily: "'DM Sans', sans-serif", padding: '24px' }}>
+        <div style={{ textAlign: 'center', maxWidth: 400, width: '100%' }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(48,209,88,0.12)', border: '1.5px solid rgba(48,209,88,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
             <Check size={28} color="#30D158" />
           </div>
@@ -77,38 +89,71 @@ export default function SignupPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: isDark ? '#08090C' : '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '60px 64px', position: 'relative', overflow: 'hidden', background: isDark ? 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(48,209,88,0.2) 0%, transparent 60%), #08090C' : 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(48,180,80,0.12) 0%, transparent 60%), #dde4f5' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: isDark ? 0.06 : 0.1, backgroundImage: `linear-gradient(rgba(48,209,88,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(48,209,88,0.4) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 64 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 18 }}>O</span>
-            </div>
-            <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1a1a2e' }}>OfliX</span>
-          </Link>
-          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#30D158', marginBottom: 12 }}>🇰🇪 {t('Built for Kenya', 'Imetengenezwa kwa Kenya')}</p>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.5px', lineHeight: 1.3, marginBottom: 16, maxWidth: 320 }}>
-            {t('Get your business online today.', 'Weka biashara yako mtandaoni leo.')}
-          </h2>
-          <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[
-              t('Free website in under 10 minutes', 'Tovuti ya bure kwa chini ya dakika 10'),
-              t('WhatsApp button included', 'Kitufe cha WhatsApp kimejumuishwa'),
-              t('Your location on Google Maps', 'Eneo lako kwenye Google Maps'),
-            ].map(item => (
-              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Check size={14} color="#30D158" />
-                <span style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(20,30,80,0.5)' }}>{item}</span>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: isMobile ? 'column' : 'row', background: isDark ? '#08090C' : '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
+
+      {/* Left marketing panel — hidden on mobile */}
+      {!isMobile && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '60px 64px', position: 'relative', overflow: 'hidden', background: isDark ? 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(48,209,88,0.2) 0%, transparent 60%), #08090C' : 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(48,180,80,0.12) 0%, transparent 60%), #dde4f5' }}>
+          <div style={{ position: 'absolute', inset: 0, opacity: isDark ? 0.06 : 0.1, backgroundImage: `linear-gradient(rgba(48,209,88,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(48,209,88,0.4) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 64 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 18 }}>O</span>
               </div>
-            ))}
+              <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1a1a2e' }}>OfliX</span>
+            </Link>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#30D158', marginBottom: 12 }}>🇰🇪 {t('Built for Kenya', 'Imetengenezwa kwa Kenya')}</p>
+            <h2 style={{ fontSize: 32, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.5px', lineHeight: 1.3, marginBottom: 16, maxWidth: 320 }}>
+              {t('Get your business online today.', 'Weka biashara yako mtandaoni leo.')}
+            </h2>
+            <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                t('Free website in under 10 minutes', 'Tovuti ya bure kwa chini ya dakika 10'),
+                t('WhatsApp button included', 'Kitufe cha WhatsApp kimejumuishwa'),
+                t('Your location on Google Maps', 'Eneo lako kwenye Google Maps'),
+              ].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Check size={14} color="#30D158" />
+                  <span style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(20,30,80,0.5)' }}>{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div style={{ width: 500, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 56px', background: isDark ? '#111318' : '#ffffff', borderLeft: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(10,100,220,0.1)', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 24, left: 28, right: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link to="/" style={{ fontSize: 13, color: isDark ? '#444' : '#8090c0', textDecoration: 'none' }}>← {t('Home', 'Nyumbani')}</Link>
+      {/* Right form panel */}
+      <div style={{
+        width: isMobile ? '100%' : 500,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: isMobile ? 'flex-start' : 'center',
+        padding: isMobile ? '24px 24px 40px' : '48px 56px',
+        background: isDark ? '#111318' : '#ffffff',
+        borderLeft: isMobile ? 'none' : (isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(10,100,220,0.1)'),
+        minHeight: isMobile ? '100vh' : 'auto',
+        boxSizing: 'border-box',
+      }}>
+
+        {/* Top nav bar — in normal flow on mobile, absolute on desktop */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: isMobile ? 32 : 0,
+          ...(isMobile ? {} : { position: 'absolute' as const, top: 24, left: 28, right: 24 }),
+        }}>
+          {isMobile ? (
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+              <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 15 }}>O</span>
+              </div>
+              <span style={{ fontSize: 17, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1a1a2e' }}>OfliX</span>
+            </Link>
+          ) : (
+            <Link to="/" style={{ fontSize: 13, color: isDark ? '#444' : '#8090c0', textDecoration: 'none' }}>← {t('Home', 'Nyumbani')}</Link>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={toggleLanguage} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,100,220,0.15)', background: 'transparent', cursor: 'pointer', fontSize: 11, color: isDark ? '#555' : '#8090c0', fontFamily: "'DM Sans', sans-serif" }}>
               <Globe size={12} /> {language === 'en' ? 'SW' : 'EN'}
@@ -121,7 +166,7 @@ export default function SignupPage() {
 
         <div style={{ marginBottom: 28 }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0A84FF', marginBottom: 10 }}>{t('Create your account', 'Tengeneza akaunti yako')}</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.3px', marginBottom: 8 }}>
+          <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.3px', marginBottom: 8 }}>
             {t('Your business deserves to be online.', 'Biashara yako inastahili kuwa mtandaoni.')}
           </h1>
           <p style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(20,30,90,0.5)', lineHeight: 1.6 }}>

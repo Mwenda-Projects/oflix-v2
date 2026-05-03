@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, ArrowRight, Loader2, Globe, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [focused, setFocused] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -37,35 +45,69 @@ export default function LoginPage() {
     width: '100%', padding: '13px 16px', borderRadius: 10,
     border: `1.5px solid ${focused === field ? '#0A84FF' : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(10,100,220,0.15)'}`,
     background: isDark ? (focused === field ? 'rgba(10,132,255,0.05)' : 'rgba(255,255,255,0.03)') : (focused === field ? 'rgba(10,100,220,0.04)' : 'rgba(10,100,220,0.02)'),
-    color: isDark ? '#E5E5E7' : '#1a1a2e', fontSize: 14,
+    color: isDark ? '#E5E5E7' : '#1a1a2e',
+    fontSize: 16, // 16px prevents iOS auto-zoom on focus
     fontFamily: "'DM Sans', sans-serif", outline: 'none',
     boxSizing: 'border-box' as const, transition: 'all 0.2s',
     boxShadow: focused === field ? `0 0 0 3px ${isDark ? 'rgba(10,132,255,0.1)' : 'rgba(10,100,220,0.08)'}` : 'none',
   })
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: isDark ? '#08090C' : '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '60px 64px', position: 'relative', overflow: 'hidden', background: isDark ? 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(10,132,255,0.25) 0%, transparent 60%), #08090C' : 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(10,100,220,0.12) 0%, transparent 60%), #dde4f5' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: isDark ? 0.06 : 0.1, backgroundImage: `linear-gradient(rgba(10,132,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(10,132,255,0.5) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 64 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 18 }}>O</span>
-            </div>
-            <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1a1a2e' }}>OfliX</span>
-          </Link>
-          <h2 style={{ fontSize: 34, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.5px', lineHeight: 1.3, marginBottom: 16, maxWidth: 340 }}>
-            {t('Welcome back, builder.', 'Karibu tena, mjenzi.')}
-          </h2>
-          <p style={{ fontSize: 15, color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(20,30,80,0.5)', lineHeight: 1.7, maxWidth: 300 }}>
-            {t('Your business website is waiting.', 'Tovuti ya biashara yako inakusubiri.')}
-          </p>
-        </div>
-      </div>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: isMobile ? 'column' : 'row', background: isDark ? '#08090C' : '#f0f2f8', fontFamily: "'DM Sans', sans-serif" }}>
 
-      <div style={{ width: 500, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 56px', background: isDark ? '#111318' : '#ffffff', borderLeft: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(10,100,220,0.1)', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 24, left: 28, right: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link to="/" style={{ fontSize: 13, color: isDark ? '#444' : '#8090c0', textDecoration: 'none' }}>← {t('Home', 'Nyumbani')}</Link>
+      {/* Left marketing panel — hidden on mobile */}
+      {!isMobile && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '60px 64px', position: 'relative', overflow: 'hidden', background: isDark ? 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(10,132,255,0.25) 0%, transparent 60%), #08090C' : 'radial-gradient(ellipse 80% 70% at 10% 50%, rgba(10,100,220,0.12) 0%, transparent 60%), #dde4f5' }}>
+          <div style={{ position: 'absolute', inset: 0, opacity: isDark ? 0.06 : 0.1, backgroundImage: `linear-gradient(rgba(10,132,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(10,132,255,0.5) 1px, transparent 1px)`, backgroundSize: '48px 48px', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 64 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 18 }}>O</span>
+              </div>
+              <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1a1a2e' }}>OfliX</span>
+            </Link>
+            <h2 style={{ fontSize: 34, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.5px', lineHeight: 1.3, marginBottom: 16, maxWidth: 340 }}>
+              {t('Welcome back, builder.', 'Karibu tena, mjenzi.')}
+            </h2>
+            <p style={{ fontSize: 15, color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(20,30,80,0.5)', lineHeight: 1.7, maxWidth: 300 }}>
+              {t('Your business website is waiting.', 'Tovuti ya biashara yako inakusubiri.')}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Right form panel */}
+      <div style={{
+        width: isMobile ? '100%' : 500,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: isMobile ? 'flex-start' : 'center',
+        padding: isMobile ? '24px 24px 40px' : '48px 56px',
+        background: isDark ? '#111318' : '#ffffff',
+        borderLeft: isMobile ? 'none' : (isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(10,100,220,0.1)'),
+        minHeight: isMobile ? '100vh' : 'auto',
+        boxSizing: 'border-box' as const,
+      }}>
+
+        {/* Top nav bar — in normal flow on mobile, absolute on desktop */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: isMobile ? 32 : 0,
+          ...(isMobile ? {} : { position: 'absolute' as const, top: 24, left: 28, right: 24 }),
+        }}>
+          {isMobile ? (
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+              <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 15 }}>O</span>
+              </div>
+              <span style={{ fontSize: 17, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isDark ? '#F5F5F7' : '#1a1a2e' }}>OfliX</span>
+            </Link>
+          ) : (
+            <Link to="/" style={{ fontSize: 13, color: isDark ? '#444' : '#8090c0', textDecoration: 'none' }}>← {t('Home', 'Nyumbani')}</Link>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={toggleLanguage} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,100,220,0.15)', background: 'transparent', cursor: 'pointer', fontSize: 11, color: isDark ? '#555' : '#8090c0', fontFamily: "'DM Sans', sans-serif" }}>
               <Globe size={12} /> {language === 'en' ? 'SW' : 'EN'}
@@ -78,7 +120,7 @@ export default function LoginPage() {
 
         <div style={{ marginBottom: 32 }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0A84FF', marginBottom: 10 }}>{t('Sign in', 'Ingia')}</p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.3px', marginBottom: 8 }}>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: isDark ? '#F5F5F7' : '#1a1a2e', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.3px', marginBottom: 8 }}>
             {t('Good to see you again.', 'Vizuri kukuona tena.')}
           </h1>
           <p style={{ fontSize: 13, color: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(20,30,90,0.5)', lineHeight: 1.6 }}>
