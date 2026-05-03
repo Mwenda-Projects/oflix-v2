@@ -4,10 +4,10 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useAuth } from '@/context/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
-import { getMyBusiness, updateBusiness } from '@/lib/db'
+import { getMyBusiness, updateBusiness, signOut } from '@/lib/db'
 import { buildPhotoPrompt } from '@/lib/photos'
 import type { Business } from '@/lib/db'
-import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2 } from 'lucide-react'
+import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2, LogOut } from 'lucide-react'
 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
 
   useEffect(() => {
     getMyBusiness().then(biz => {
@@ -47,6 +48,12 @@ export default function SettingsPage() {
     setSaved(true)
     setEditing(null)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleSignOut = async () => {
+    setSigningOut(true)
+    await signOut()
+    navigate('/login')
   }
 
   const handleRegenerate = async () => {
@@ -155,7 +162,6 @@ STRICT RULES:
   const accent = '#008060'
   const rowBorder = isDark ? '#222' : '#F0F0F0'
 
-  // Plan badge
   const planColors: Record<string, { bg: string; color: string }> = {
     free:    { bg: isDark ? 'rgba(255,255,255,0.06)' : '#F0F0F0', color: isDark ? '#666' : '#888' },
     pending: { bg: 'rgba(255,159,10,0.12)', color: '#FF9F0A' },
@@ -249,7 +255,7 @@ STRICT RULES:
             <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 12 }}>
               {t('Edit', 'Hariri')} {editing}
             </div>
-            <input value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus style={{ width: '100%', padding: '11px 14px', borderRadius: 8, border: `1.5px solid ${accent}`, background: isDark ? '#111' : '#FFF', color: textPrimary, fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', marginBottom: 12 }} />
+            <input value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus style={{ width: '100%', padding: '11px 14px', borderRadius: 8, border: `1.5px solid ${accent}`, background: isDark ? '#111' : '#FFF', color: textPrimary, fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', marginBottom: 12, boxSizing: 'border-box' }} />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setEditing(null)} style={{ padding: '8px 16px', borderRadius: 7, border: `1px solid ${border}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
                 {t('Cancel', 'Ghairi')}
@@ -339,6 +345,28 @@ STRICT RULES:
         <Section title={t('Account', 'Akaunti')} subtitle={t('Manage your OfliX account', 'Simamia akaunti yako ya OfliX')}>
           <Row icon={Mail} label={t('Email address', 'Anwani ya barua pepe')} value={user?.email || ''} />
           <Row icon={Lock} label={t('Change password', 'Badilisha nenosiri')} value={t('Update your login password', 'Sasisha nenosiri lako la kuingia')} action={() => {}} actionLabel={t('Change', 'Badilisha')} actionStyle="outline" />
+
+          {/* ── Sign out ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${rowBorder}`, gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <LogOut size={13} color={textMuted} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: textPrimary }}>{t('Sign out', 'Toka')}</div>
+                <div style={{ fontSize: 12, color: textMuted }}>{user?.email || ''}</div>
+              </div>
+            </div>
+            <button
+              onClick={handleSignOut}
+              disabled={signingOut}
+              style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: `1px solid ${border}`, background: 'transparent', color: textPrimary, cursor: signingOut ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, opacity: signingOut ? 0.6 : 1 }}
+            >
+              {signingOut ? t('Signing out...', 'Inatoka...') : t('Sign out', 'Toka')}
+            </button>
+          </div>
+
+          {/* ── Delete account ── */}
           <div style={{ padding: '14px 20px' }}>
             {!deleteConfirm ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
