@@ -255,7 +255,7 @@ STRICT RULES:
             <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary, marginBottom: 12 }}>
               {t('Edit', 'Hariri')} {editing}
             </div>
-            <input value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus style={{ width: '100%', padding: '11px 14px', borderRadius: 8, border: `1.5px solid ${accent}`, background: isDark ? '#111' : '#FFF', color: textPrimary, fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', marginBottom: 12, boxSizing: 'border-box' }} />
+            <input value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus style={{ width: '100%', padding: '11px 14px', borderRadius: 8, border: `1.5px solid ${accent}`, background: isDark ? '#111' : '#FFF', color: textPrimary, fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', marginBottom: 12, boxSizing: 'border-box' as const }} />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setEditing(null)} style={{ padding: '8px 16px', borderRadius: 7, border: `1px solid ${border}`, background: 'transparent', color: textMuted, fontSize: 13, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
                 {t('Cancel', 'Ghairi')}
@@ -344,7 +344,14 @@ STRICT RULES:
 
         <Section title={t('Account', 'Akaunti')} subtitle={t('Manage your OfliX account', 'Simamia akaunti yako ya OfliX')}>
           <Row icon={Mail} label={t('Email address', 'Anwani ya barua pepe')} value={user?.email || ''} />
-          <Row icon={Lock} label={t('Change password', 'Badilisha nenosiri')} value={t('Update your login password', 'Sasisha nenosiri lako la kuingia')} action={() => {}} actionLabel={t('Change', 'Badilisha')} actionStyle="outline" />
+          <Row
+            icon={Lock}
+            label={t('Change password', 'Badilisha nenosiri')}
+            value={t('Update your login password', 'Sasisha nenosiri lako la kuingia')}
+            action={() => navigate('/forgot-password')}
+            actionLabel={t('Change', 'Badilisha')}
+            actionStyle="outline"
+          />
 
           {/* ── Sign out ── */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${rowBorder}`, gap: 12 }}>

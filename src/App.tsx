@@ -14,6 +14,8 @@ import SettingsPage from '@/pages/SettingsPage'
 import MyWebsitePage from '@/pages/MyWebsitePage'
 import UpgradePage from '@/pages/UpgradePage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
               {/* Guest only */}
               <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
               <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Public business page */}
               <Route path="/b/:slug" element={<BusinessPage />} />
