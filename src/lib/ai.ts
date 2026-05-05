@@ -10,48 +10,64 @@ export async function generateWebsite(business: {
   hours?: string
 }): Promise<string> {
 
-  const categoryStyles: Record<string, string> = {
-    food:         'warm and appetising — deep amber, cream, forest green. Hero with big food feel, menu highlights, hours, WhatsApp order button.',
-    salon:        'elegant and luxurious — rose gold, soft blush, charcoal. Hero, services list, hours, WhatsApp booking button.',
-    clinic:       'clean and trustworthy — white, calm blue, soft green. Hero, services, hours, WhatsApp appointment button.',
-    retail:       'bold and modern — vibrant accent on white. Hero, featured products, hours, WhatsApp inquiry button.',
-    school:       'inspiring and professional — navy, gold, white. Hero, courses, why choose us, WhatsApp enrollment button.',
-    transport:    'strong and reliable — dark navy, orange accent. Hero, routes/services, WhatsApp booking button.',
-    construction: 'industrial and trustworthy — dark grey, yellow. Hero, services, WhatsApp quote button.',
-    agriculture:  'natural and earthy — green, brown, cream. Hero, products, WhatsApp order button.',
-    tech:         'modern and minimal — dark background, electric blue. Hero, services, WhatsApp button.',
-    other:        'clean and professional — white with strong colour accent. Hero, about, services, WhatsApp button.',
+  const categoryColors: Record<string, { bg: string; accent: string; text: string }> = {
+    food:         { bg: '#1a0a00', accent: '#FF6B00', text: '#fff8f0' },
+    salon:        { bg: '#1a0a10', accent: '#E8A0BF', text: '#fff5f8' },
+    clinic:       { bg: '#001a2c', accent: '#00AAFF', text: '#f0f8ff' },
+    retail:       { bg: '#0a0a1a', accent: '#6C63FF', text: '#f5f5ff' },
+    school:       { bg: '#001020', accent: '#FFD700', text: '#f5f5ff' },
+    transport:    { bg: '#0a0a0a', accent: '#FF6600', text: '#ffffff' },
+    construction: { bg: '#111111', accent: '#F5C400', text: '#ffffff' },
+    agriculture:  { bg: '#0a1a00', accent: '#4CAF50', text: '#f5fff0' },
+    tech:         { bg: '#050510', accent: '#00EEFF', text: '#f0ffff' },
+    other:        { bg: '#0f0f0f', accent: '#00C896', text: '#ffffff' },
   }
 
-  const style = categoryStyles[business.category] || categoryStyles.other
+  const colors = categoryColors[business.category] || categoryColors.other
   const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
   const whatsappLink = `https://wa.me/${whatsappNumber}`
 
-  const prompt = `You are a world-class web designer. Build a complete, stunning, mobile-first single-page website for a real Nairobi business.
+  const prompt = `Create a single-page business website. Return ONLY the raw HTML, nothing else.
 
-BUSINESS DETAILS:
-- Name: ${business.name}
-- Type: ${business.category}
-- Description: ${business.description}
-- Phone: ${business.phone}
-- WhatsApp: ${whatsappLink}
-- Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
+BUSINESS:
+Name: ${business.name}
+Description: ${business.description}
+Phone: ${business.phone}
+WhatsApp: ${whatsappLink}
+Address: ${business.address}${business.hours ? `\nHours: ${business.hours}` : ''}
 
-DESIGN DIRECTION:
-${style}
+COLORS: background ${colors.bg}, accent ${colors.accent}, text ${colors.text}
 
-STRICT RULES:
-1. Return ONLY raw HTML — no markdown, no backticks, no explanation.
-2. Complete single file: <html>, <head> with ONE Google Fonts import, ALL CSS in one <style> block, ALL JS in one <script> at end of body.
-3. Mobile-first. Looks perfect on a phone.
-4. Use the EXACT business name, description, phone and address — no placeholders.
-5. WhatsApp button must open: ${whatsappLink}
-6. Phone must link to: tel:${business.phone}
-7. Exactly 4 sections only: Hero, Services, About/Contact, Footer. No more.
-8. Simple CSS only — no complex animations, no clip-paths, no keyframes except one fade-in. Keep CSS under 200 lines.
-9. Small "Powered by OfliX" in the footer.
-10. Must look premium and professional.
-11. CRITICAL: You MUST write the complete file. The last line MUST be </html>. Never stop mid-way.`
+Use this EXACT structure — short CSS, complete HTML:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[NAME]</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: [BG]; color: [TEXT]; }
+/* Write minimal CSS — under 80 lines total */
+</style>
+</head>
+<body>
+<!-- 1. Nav with business name and Call button -->
+<!-- 2. Hero section with name, description, WhatsApp button -->
+<!-- 3. Services section (3-4 services based on business type) -->
+<!-- 4. Contact section with phone, address, hours -->
+<!-- 5. Footer with "Powered by OfliX" -->
+</body>
+</html>
+
+RULES:
+- CSS must be SHORT (under 80 lines). No animations, no clip-paths, no keyframes.
+- Mobile-first using simple flexbox and padding.
+- WhatsApp link: ${whatsappLink}
+- Phone link: tel:${business.phone}
+- The file MUST end with </html> on the last line.
+- Make it look clean and professional with the accent color ${colors.accent}.`
 
   const response = await fetch(PROXY_URL, {
     method: 'POST',
@@ -72,5 +88,6 @@ STRICT RULES:
   const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
   if (!html) throw new Error('No website was generated')
 
+  // Strip any markdown code fences if model adds them
   return html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim()
 }
