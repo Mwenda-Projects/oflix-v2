@@ -42,23 +42,23 @@ ${style}
 
 STRICT RULES:
 1. Return ONLY raw HTML — no markdown, no backticks, no explanation.
-2. Complete single file with <html>, <head> with Google Fonts, all CSS in <style>, all JS in <script>.
+2. Complete single file: <html>, <head> with ONE Google Fonts import, ALL CSS in one <style> block, ALL JS in one <script> at end of body.
 3. Mobile-first. Looks perfect on a phone.
-4. Use the EXACT business name, description, phone and address above — no placeholders.
+4. Use the EXACT business name, description, phone and address — no placeholders.
 5. WhatsApp button must open: ${whatsappLink}
 6. Phone must link to: tel:${business.phone}
-7. At least 4 sections: Hero, Services/About, Contact, Call-to-action.
-8. Smooth scroll and subtle CSS animations.
+7. Exactly 4 sections only: Hero, Services, About/Contact, Footer. No more.
+8. Simple CSS only — no complex animations, no clip-paths, no keyframes except one fade-in. Keep CSS under 200 lines.
 9. Small "Powered by OfliX" in the footer.
-10. Must look like a KES 50,000 website — not a template, not a business card.
-11. Keep CSS efficient — no repetition. You MUST finish the complete HTML including closing </body> and </html> tags.`
+10. Must look premium and professional.
+11. CRITICAL: You MUST write the complete file. The last line MUST be </html>. Never stop mid-way.`
 
   const response = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
+      max_tokens: 16000,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
