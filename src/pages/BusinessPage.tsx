@@ -196,7 +196,7 @@ export default function BusinessPage() {
             display: 'block',
           }}
           title={business.name}
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          sandbox="allow-scripts allow-popups allow-forms"
         />
       </div>
     )
