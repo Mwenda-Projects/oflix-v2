@@ -33,7 +33,8 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-              {/* Public business page */}
+              {/* Public business page — rendered OUTSIDE ThemeProvider wrapper
+                  so it gets no extra wrapper divs that could break height chain */}
               <Route path="/b/:slug" element={<BusinessPage />} />
 
               {/* Protected */}
