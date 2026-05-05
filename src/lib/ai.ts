@@ -50,14 +50,15 @@ STRICT RULES:
 7. At least 4 sections: Hero, Services/About, Contact, Call-to-action.
 8. Smooth scroll and subtle CSS animations.
 9. Small "Powered by OfliX" in the footer.
-10. Must look like a KES 50,000 website — not a template, not a business card.`
+10. Must look like a KES 50,000 website — not a template, not a business card.
+11. Keep CSS efficient — no repetition. You MUST finish the complete HTML including closing </body> and </html> tags.`
 
   const response = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 8000,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
