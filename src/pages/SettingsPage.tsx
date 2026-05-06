@@ -5,8 +5,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import { useAuth } from '@/context/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness, signOut } from '@/lib/db'
-import { buildPhotoPrompt } from '@/lib/photos'
-import { cleanGeneratedHtml, isValidGeneratedHtml } from '@/lib/ai'
+import { generateWebsite as generateWebsiteFromAI, isValidGeneratedHtml } from '@/lib/ai'
 import type { Business } from '@/lib/db'
 import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2, LogOut } from 'lucide-react'
 
@@ -66,96 +65,23 @@ export default function SettingsPage() {
     setRegenerating(true)
     setError(null)
     try {
-      const styles: Record<string, string> = {
-        food: 'warm and appetising — deep amber, cream, forest green.',
-        salon: 'elegant and luxurious — rose gold, soft blush, charcoal.',
-        clinic: 'clean and trustworthy — white, calm blue, soft green.',
-        retail: 'bold and modern — vibrant accent on white.',
-        school: 'inspiring and professional — navy, gold, white.',
-        transport: 'strong and reliable — dark navy, orange accent.',
-        construction: 'industrial and trustworthy — dark grey, yellow.',
-        agriculture: 'natural and earthy — green, brown, cream.',
-        tech: 'modern and minimal — dark background, electric blue.',
-        other: 'clean and professional — white with a bold colour accent.',
-      }
-      const style = styles[business.category] || styles.other
-      const num = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
-      const waLink = `https://wa.me/${num}`
-
-      const prompt = `You are a world-class web designer. Build a complete, stunning, mobile-first single-page website for a real Nairobi business.
-
-BUSINESS DETAILS:
-- Name: ${business.name}
-- Type: ${business.category}
-- Description: ${business.description}
-- Phone: ${business.phone}
-- WhatsApp: ${waLink}
-- Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
-
-DESIGN DIRECTION: ${style}
-
-${buildPhotoPrompt(business.category)}
-
-IMPORTANT: Create a COMPLETELY DIFFERENT design from before. New layout, new colors, new feel — same business details.
-
-STRICT RULES:
-1. Return ONLY raw HTML. No markdown. No backticks. No explanation.
-2. Complete single file with Google Fonts, all CSS in <style>, JS in <script>.
-3. Mobile-first. Minimum 4 sections. WhatsApp button: ${waLink}
-4. Small "Powered by OfliX" footer.
-5. Must look like a KES 80,000 website.
-13. SAVE CONTACT BUTTON — include this in every website:
-    Add a "Save Contact" button that generates and downloads a .vcf file when tapped.
-    The button should be prominently placed in the contact section.
-    Use this exact JavaScript to generate the vcf:
-    function saveContact() {
-      const vcf = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        'FN:' + businessName,
-        'ORG:' + businessName,
-        'TEL;TYPE=CELL:' + callNumber,
-        'TEL;TYPE=WHATSAPP:' + waNumber,
-        'ADR;TYPE=WORK:;;' + address + ';;;;',
-        'URL:' + websiteUrl,
-        'END:VCARD'
-      ].join('\n');
-      const blob = new Blob([vcf], {type: 'text/vcard'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = businessName + '.vcf';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-    Replace businessName, callNumber, waNumber, address, websiteUrl with the actual business values hardcoded as strings.
-    Style the button with a person-add icon (use unicode \u{1F4F1} or similar) and label "Save Contact".
-    Works offline once page is cached.`
-
-      const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 16000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+      const html = await generateWebsiteFromAI({
+        name: business.name,
+        category: business.category,
+        description: business.description,
+        phone: business.phone,
+        whatsapp: business.whatsapp,
+        address: business.address,
+        hours: business.hours,
       })
 
-      const data = await response.json()
-      const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
-      if (html) {
-        const clean = cleanGeneratedHtml(html)
-        if (!isValidGeneratedHtml(clean)) {
-          setError('AI returned incomplete website output. Please try again.')
-        } else {
-          await updateBusiness(business.id, { generated_html: clean } as any)
-          setBusiness({ ...business, generated_html: clean } as any)
-          setSaved(true)
-          setTimeout(() => setSaved(false), 3000)
-        }
+      if (!isValidGeneratedHtml(html)) {
+        setError('Generated website was incomplete. Please try again.')
       } else {
-        setError('AI did not return website HTML. Please try again.')
+        await updateBusiness(business.id, { generated_html: html } as any)
+        setBusiness({ ...business, generated_html: html } as any)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
       }
     } catch (err) {
       console.error(err)

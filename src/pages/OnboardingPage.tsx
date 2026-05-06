@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
 import { createBusiness, updateBusiness } from '@/lib/db'
-import { buildPhotoPrompt } from '@/lib/photos'
+import { generateWebsite as generateWebsiteFromAI } from '@/lib/ai'
 import { ArrowRight, Sparkles, Phone, MessageCircle } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -85,106 +85,6 @@ function detectCategory(description: string): string {
   return 'other'
 }
 
-// ── AI generation ─────────────────────────────────────────────
-async function generateWebsite(business: Collected): Promise<string> {
-  const styles: Record<string, string> = {
-    food: 'warm and appetising — deep amber, cream, forest green. Hero, menu highlights, hours, WhatsApp order button.',
-    salon: 'elegant and luxurious — rose gold, soft blush, charcoal. Hero, services list, hours, WhatsApp booking button.',
-    clinic: 'clean and trustworthy — white, calm blue, soft green. Hero, services, hours, WhatsApp appointment button.',
-    retail: 'bold and modern — vibrant accent on white. Hero, products, hours, WhatsApp inquiry button.',
-    school: 'inspiring and professional — navy, gold, white. Hero, courses, WhatsApp enrollment button.',
-    transport: 'strong and reliable — dark navy, orange accent. Hero, routes/services, WhatsApp booking button.',
-    construction: 'industrial and trustworthy — dark grey, yellow. Hero, services, WhatsApp quote button.',
-    agriculture: 'natural and earthy — green, brown, cream. Hero, products, WhatsApp order button.',
-    tech: 'modern and minimal — dark background, electric blue. Hero, services, WhatsApp button.',
-    other: 'clean and professional — white with a bold colour accent. Hero, about, services, WhatsApp button.',
-  }
-
-  const cat = business.category || 'other'
-  const style = styles[cat] || styles.other
-
-  // Phone and WhatsApp are now separate
-  const callNumber = business.phone || ''
-  const waNumber = (business.whatsapp || business.phone || '').replace(/\D/g, '').replace(/^0/, '254')
-  const waLink = `https://wa.me/${waNumber}`
-
-  const prompt = `You are a world-class web designer. Build a complete, stunning, mobile-first single-page website for a real Nairobi business.
-
-BUSINESS DETAILS:
-- Name: ${business.businessName}
-- Type: ${cat}
-- Description: ${business.description}
-- Call number: ${callNumber}
-- WhatsApp: ${waLink}
-- Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
-
-DESIGN DIRECTION: ${style}
-
-${buildPhotoPrompt(cat)}
-
-STRICT RULES:
-1. Return ONLY raw HTML. No markdown. No backticks. No explanation.
-2. Complete single file: <html>, <head> with Google Fonts, all CSS in <style>, all JS in <script>.
-3. Mobile-first. Looks perfect on a phone.
-4. Use EXACT business details above — no placeholders ever.
-5. WhatsApp button must open: ${waLink}
-6. Call button must link to: tel:${callNumber}
-7. If call number and WhatsApp number are different, show BOTH buttons clearly.
-8. Minimum 4 sections: Hero, Services/About, Contact, Call-to-action.
-9. Smooth scroll and subtle CSS animations.
-10. Small "Powered by OfliX" footer linking to https://oflix.co.ke
-11. Must look like a KES 80,000 website — premium, unique, not a template.
-12. Use the provided images prominently — real photos make it look stunning.
-13. SAVE CONTACT BUTTON — include this in every website:
-    Add a "Save Contact" button that generates and downloads a .vcf file when tapped.
-    The button should be prominently placed in the contact section.
-    Use this exact JavaScript to generate the vcf:
-    function saveContact() {
-      const vcf = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        'FN:' + businessName,
-        'ORG:' + businessName,
-        'TEL;TYPE=CELL:' + callNumber,
-        'TEL;TYPE=WHATSAPP:' + waNumber,
-        'ADR;TYPE=WORK:;;' + address + ';;;;',
-        'URL:' + websiteUrl,
-        'END:VCARD'
-      ].join('\n');
-      const blob = new Blob([vcf], {type: 'text/vcard'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = businessName + '.vcf';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-    Replace businessName, callNumber, waNumber, address, websiteUrl with the actual business values hardcoded as strings.
-    Style the button with a person-add icon (use unicode \u{1F4F1} or similar) and label "Save Contact".
-    Works offline once page is cached.`
-
-  const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error || 'Generation failed')
-  }
-
-  const data = await response.json()
-  const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
-  if (!html) throw new Error('No website returned')
-  return html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim()
-}
-
-// ── Component ──────────────────────────────────────────────────
 export default function OnboardingPage() {
   const { isDark } = useTheme()
   const navigate = useNavigate()
@@ -255,7 +155,15 @@ export default function OnboardingPage() {
       if (err || !biz) throw new Error('Could not save')
 
       setBuildStatus('AI is designing your website...')
-      const html = await generateWebsite(data)
+      const html = await generateWebsiteFromAI({
+        name: data.businessName || '',
+        category: data.category || 'other',
+        description: data.description || '',
+        phone: data.phone || '',
+        whatsapp: data.whatsapp || data.phone || '',
+        address: data.address || '',
+        hours: data.hours,
+      })
 
       setBuildStatus('Almost done...')
       await updateBusiness(biz.id, { generated_html: html } as any)
