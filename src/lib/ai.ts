@@ -1,5 +1,21 @@
 const PROXY_URL = 'https://oflix-v2.vercel.app/api/generate'
 
+export function cleanGeneratedHtml(raw: string) {
+  return raw.replace(/^```(?:html|json)?\n?/i, '').replace(/\n?```$/i, '').trim()
+}
+
+export function isValidGeneratedHtml(html?: string) {
+  if (!html) return false
+  const normalized = html.toLowerCase()
+  return normalized.includes('<html') &&
+    normalized.includes('</html>') &&
+    normalized.includes('<head') &&
+    normalized.includes('</head>') &&
+    normalized.includes('<body') &&
+    normalized.includes('</body>') &&
+    normalized.includes('</style>')
+}
+
 export async function generateWebsite(business: {
   name: string
   category: string

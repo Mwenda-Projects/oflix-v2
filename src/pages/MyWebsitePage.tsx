@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
 import { buildPhotoPrompt } from '@/lib/photos'
+import { cleanGeneratedHtml, isValidGeneratedHtml } from '@/lib/ai'
 import type { Business } from '@/lib/db'
 import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -147,12 +148,18 @@ STRICT RULES:
       const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
 
       if (html) {
-        const clean = html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim()
-        await updateBusiness(business.id, { generated_html: clean } as any)
-        setBusiness({ ...business, generated_html: clean } as any)
-        setMessage(t('Website updated!', 'Tovuti imesasishwa!'))
-        setPrompt('')
-        setTimeout(() => setMessage(null), 3000)
+        const clean = cleanGeneratedHtml(html)
+        if (!isValidGeneratedHtml(clean)) {
+          setMessage(t('AI returned incomplete website output. Please try again.', 'AI ilirudisha tovuti isiyokamilika. Jaribu tena.'))
+        } else {
+          await updateBusiness(business.id, { generated_html: clean } as any)
+          setBusiness({ ...business, generated_html: clean } as any)
+          setMessage(t('Website updated!', 'Tovuti imesasishwa!'))
+          setPrompt('')
+          setTimeout(() => setMessage(null), 3000)
+        }
+      } else {
+        setMessage(t('AI did not return website HTML. Please try again.', 'AI haikurudisha HTML ya tovuti. Jaribu tena.'))
       }
     } catch {
       setMessage(t('Something went wrong. Try again.', 'Hitilafu fulani. Jaribu tena.'))

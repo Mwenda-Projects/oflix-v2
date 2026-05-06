@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { MapPin, MessageCircle, Phone, Clock } from 'lucide-react'
 import { getBusinessBySlug, trackLead } from '@/lib/db'
+import { isValidGeneratedHtml } from '@/lib/ai'
 import type { Business } from '@/lib/db'
 import { formatWhatsAppUrl, formatGoogleMapsUrl } from '@/lib/utils'
 
@@ -180,15 +181,16 @@ export default function BusinessPage() {
     )
   }
 
-  // ── AI-generated website ─────────────────────────────────────
-  // If we have generated HTML, render it full screen in an iframe
-  if ((business as any).generated_html) {
-    const html = (business as any).generated_html as string
+  const generatedHtml = (business as any).generated_html as string | undefined
+  const hasValidGeneratedHtml = isValidGeneratedHtml(generatedHtml)
 
+  // ── AI-generated website ─────────────────────────────────────
+  // If we have generated valid generated HTML, render it full screen in an iframe
+  if (hasValidGeneratedHtml) {
     return (
       <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
         <iframe
-          srcDoc={html}
+          srcDoc={generatedHtml}
           style={{
             width: '100%',
             height: '100%',

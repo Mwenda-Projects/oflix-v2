@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness, signOut } from '@/lib/db'
 import { buildPhotoPrompt } from '@/lib/photos'
+import { cleanGeneratedHtml, isValidGeneratedHtml } from '@/lib/ai'
 import type { Business } from '@/lib/db'
 import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2, LogOut } from 'lucide-react'
 
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
 
@@ -62,6 +64,7 @@ export default function SettingsPage() {
       return
     }
     setRegenerating(true)
+    setError(null)
     try {
       const styles: Record<string, string> = {
         food: 'warm and appetising — deep amber, cream, forest green.',
@@ -142,14 +145,21 @@ STRICT RULES:
       const data = await response.json()
       const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
       if (html) {
-        const clean = html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim()
-        await updateBusiness(business.id, { generated_html: clean } as any)
-        setBusiness({ ...business, generated_html: clean } as any)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        const clean = cleanGeneratedHtml(html)
+        if (!isValidGeneratedHtml(clean)) {
+          setError('AI returned incomplete website output. Please try again.')
+        } else {
+          await updateBusiness(business.id, { generated_html: clean } as any)
+          setBusiness({ ...business, generated_html: clean } as any)
+          setSaved(true)
+          setTimeout(() => setSaved(false), 3000)
+        }
+      } else {
+        setError('AI did not return website HTML. Please try again.')
       }
     } catch (err) {
       console.error(err)
+      setError('Something went wrong while regenerating. Please try again.')
     }
     setRegenerating(false)
   }
@@ -247,6 +257,11 @@ STRICT RULES:
         {saved && (
           <div style={{ background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: accent, fontWeight: 500 }}>
             ✓ {t('Changes saved successfully.', 'Mabadiliko yamehifadhiwa.')}
+          </div>
+        )}
+        {error && (
+          <div style={{ background: isDark ? 'rgba(255,69,58,0.08)' : '#FDECEA', border: `1px solid ${isDark ? 'rgba(255,69,58,0.15)' : '#F5C6CB'}`, borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#B32525', fontWeight: 500 }}>
+            ⚠ {error}
           </div>
         )}
 
