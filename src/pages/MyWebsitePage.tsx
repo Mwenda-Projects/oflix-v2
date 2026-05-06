@@ -106,7 +106,8 @@ STRICT RULES:
 4. WhatsApp button: ${waLink} — Phone: tel:${business.phone}
 5. Small "Powered by OfliX" footer.
 6. Must look premium and professional.
-13. SAVE CONTACT BUTTON — include this in every website:
+7. Keep CSS efficient — under 150 lines. No complex animations. You MUST finish with </html>.
+8. SAVE CONTACT BUTTON — include this in every website:
     Add a "Save Contact" button that generates and downloads a .vcf file when tapped.
     The button should be prominently placed in the contact section.
     Use this exact JavaScript to generate the vcf:
@@ -139,7 +140,7 @@ STRICT RULES:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 4000,
+          max_tokens: 16000, // FIX: was 4000, caused truncation
           messages: [{ role: 'user', content: aiPrompt }],
         }),
       })
@@ -252,7 +253,13 @@ STRICT RULES:
                   </p>
                 </div>
               ) : (
-                <iframe srcDoc={generatedHtml} style={{ width: '100%', height: '100%', minHeight: 500, border: 'none', display: 'block' }} title="Website preview" sandbox="allow-scripts allow-same-origin allow-popups" />
+                // FIX: removed allow-same-origin to fix sandbox console warning
+                <iframe
+                  srcDoc={generatedHtml}
+                  style={{ width: '100%', height: '100%', minHeight: 500, border: 'none', display: 'block' }}
+                  title="Website preview"
+                  sandbox="allow-scripts allow-popups"
+                />
               )}
             </div>
           ) : (
