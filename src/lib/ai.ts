@@ -16,6 +16,20 @@ export function isValidGeneratedHtml(html?: string) {
     normalized.includes('</style>')
 }
 
+// Curated Unsplash photos per business category
+const CATEGORY_PHOTOS: Record<string, { hero: string; alt: string }> = {
+  salon:        { hero: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=80', alt: 'Professional hair salon' },
+  food:         { hero: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80', alt: 'Delicious restaurant food' },
+  clinic:       { hero: 'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1200&q=80', alt: 'Professional medical clinic' },
+  retail:       { hero: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80', alt: 'Retail shop products' },
+  school:       { hero: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&q=80', alt: 'School and education' },
+  transport:    { hero: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&q=80', alt: 'Transport and logistics' },
+  construction: { hero: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&q=80', alt: 'Construction and building' },
+  agriculture:  { hero: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1200&q=80', alt: 'Agriculture and farming' },
+  tech:         { hero: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80', alt: 'Technology and digital services' },
+  other:        { hero: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80', alt: 'Professional business' },
+}
+
 export async function generateWebsite(business: {
   name: string
   category: string
@@ -40,6 +54,7 @@ export async function generateWebsite(business: {
   }
 
   const c = categoryColors[business.category] || categoryColors.other
+  const photo = CATEGORY_PHOTOS[business.category] || CATEGORY_PHOTOS.other
   const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
   const whatsappLink = `https://wa.me/${whatsappNumber}`
 
@@ -75,7 +90,7 @@ Return this exact JSON structure:
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 16000,
+      max_tokens: 1000,
       messages: [{ role: 'user', content: contentPrompt }],
     }),
   })
@@ -117,20 +132,21 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;ali
 .logo{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:1px;color:${c.text}}
 .logo span{color:${c.accent}}
 .nav-btn{background:${c.accent};color:${c.bg};font-weight:700;font-size:0.8rem;padding:8px 16px;border-radius:4px;letter-spacing:0.5px}
-.hero{min-height:100vh;display:flex;align-items:flex-end;padding-bottom:60px;position:relative;overflow:hidden;background:linear-gradient(160deg,${c.bg} 0%,#1a1a1a 100%)}
-.hero-grad{position:absolute;inset:0;background:linear-gradient(to top,${c.bg} 0%,transparent 60%)}
+.hero{min-height:100vh;display:flex;align-items:flex-end;padding-bottom:60px;position:relative;overflow:hidden}
+.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,${c.bg} 0%,rgba(0,0,0,0.55) 60%,rgba(0,0,0,0.2) 100%);z-index:1}
 .hero-body{position:relative;z-index:2;padding:0 24px;max-width:700px}
 .hero-tag{display:inline-block;background:${c.accent};color:${c.bg};font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:5px 12px;border-radius:2px;margin-bottom:16px}
-.hero-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:${c.text}}
+.hero-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:#ffffff}
 .hero-title span{color:${c.accent};display:block}
-.hero-sub{font-size:1rem;color:${c.muted};max-width:480px;margin-bottom:28px;line-height:1.7}
+.hero-sub{font-size:1rem;color:rgba(255,255,255,0.8);max-width:480px;margin-bottom:28px;line-height:1.7}
 .hero-btns{display:flex;flex-wrap:wrap;gap:12px}
 .btn-wa{background:#25D366;color:#fff;font-weight:700;font-size:0.9rem;padding:13px 24px;border-radius:4px;display:inline-flex;align-items:center;gap:8px}
-.btn-call{background:transparent;color:${c.text};font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid ${c.accent};display:inline-flex;align-items:center;gap:8px}
+.btn-call{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid ${c.accent};display:inline-flex;align-items:center;gap:8px}
 .btn-wa:hover,.btn-call:hover{opacity:0.88}
-.hero-stats{display:flex;gap:28px;margin-top:40px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.1)}
+.hero-stats{display:flex;gap:28px;margin-top:40px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.2)}
 .stat-num{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:${c.accent};line-height:1}
-.stat-lbl{font-size:0.65rem;color:${c.muted};text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.stat-lbl{font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 .services{padding:70px 24px;background:rgba(255,255,255,0.03)}
 .about-sec{padding:70px 24px}
 .cta-section{padding:60px 24px;text-align:center;background:rgba(255,255,255,0.03)}
@@ -164,7 +180,8 @@ footer a{color:${c.accent}}
 </nav>
 
 <section class="hero">
-  <div class="hero-grad"></div>
+  <img class="hero-img" src="${photo.hero}" alt="${photo.alt}">
+  <div class="hero-overlay"></div>
   <div class="hero-body">
     <div class="hero-tag">📍 ${business.address}</div>
     <h1 class="hero-title">
