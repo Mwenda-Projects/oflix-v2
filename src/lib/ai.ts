@@ -57,8 +57,10 @@ export async function generateWebsite(business: {
   const photo = CATEGORY_PHOTOS[business.category] || CATEGORY_PHOTOS.other
   const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
   const whatsappLink = `https://wa.me/${whatsappNumber}`
+  const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address + ', Nairobi, Kenya')}`
+  const websiteUrl = `https://oflix-v2.vercel.app/b/${business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`
 
-  // Step 1: Ask Claude ONLY for JSON content — no HTML, no CSS
+  // Step 1: Ask Claude ONLY for JSON content
   const contentPrompt = `You are a copywriter for a Nairobi business website. Return ONLY valid JSON, no markdown, no explanation.
 
 Business:
@@ -113,7 +115,7 @@ Return this exact JSON structure:
     throw new Error('Failed to parse generated content')
   }
 
-  // Step 3: Inject into hardcoded HTML template — always complete, never truncated
+  // Step 3: Inject into hardcoded HTML template
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -143,7 +145,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;ali
 .hero-btns{display:flex;flex-wrap:wrap;gap:12px}
 .btn-wa{background:#25D366;color:#fff;font-weight:700;font-size:0.9rem;padding:13px 24px;border-radius:4px;display:inline-flex;align-items:center;gap:8px}
 .btn-call{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid ${c.accent};display:inline-flex;align-items:center;gap:8px}
-.btn-wa:hover,.btn-call:hover{opacity:0.88}
+.btn-directions{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.4);display:inline-flex;align-items:center;gap:8px}
+.btn-wa:hover,.btn-call:hover,.btn-directions:hover{opacity:0.88}
 .hero-stats{display:flex;gap:28px;margin-top:40px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.2)}
 .stat-num{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:${c.accent};line-height:1}
 .stat-lbl{font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
@@ -156,7 +159,7 @@ footer a{color:${c.accent}}
 .sec-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2rem,7vw,2.8rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:32px;line-height:1}
 .sec-title span{color:${c.accent}}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:800px}
-@media(max-width:480px){.grid{grid-template-columns:1fr}.hero-stats{gap:16px}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.hero-stats{gap:16px}.hero-btns{flex-direction:column}}
 .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:20px;transition:border-color 0.2s}
 .card:hover{border-color:${c.accent}}
 .card-num{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:${c.accent};opacity:0.4;line-height:1;margin-bottom:8px}
@@ -167,6 +170,10 @@ footer a{color:${c.accent}}
 .detail-row{display:flex;align-items:flex-start;gap:12px;font-size:0.9rem;color:${c.muted};margin-bottom:12px}
 .detail-icon{width:36px;height:36px;background:${c.accent};border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem}
 .detail-row strong{display:block;color:${c.text};font-size:0.8rem;margin-bottom:2px}
+.contact-btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.btn-contact{display:inline-flex;align-items:center;gap:8px;padding:13px 20px;border-radius:4px;font-weight:700;font-size:0.9rem;cursor:pointer;border:none}
+.btn-save{background:${c.accent};color:${c.bg}}
+.btn-map{background:rgba(255,255,255,0.08);color:${c.text};border:1.5px solid rgba(255,255,255,0.2)!important}
 .cta-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(1.8rem,6vw,2.5rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:8px}
 .cta-sub{color:${c.muted};font-size:0.9rem;margin-bottom:28px}
 .cta-btns{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
@@ -192,6 +199,7 @@ footer a{color:${c.accent}}
     <div class="hero-btns">
       <a href="${whatsappLink}" target="_blank" class="btn-wa">💬 WhatsApp Us</a>
       <a href="tel:${business.phone}" class="btn-call">📞 ${business.phone}</a>
+      <a href="${mapsLink}" target="_blank" class="btn-directions">🗺️ Get Directions</a>
     </div>
     <div class="hero-stats">
       <div><div class="stat-num">5★</div><div class="stat-lbl">Rating</div></div>
@@ -201,7 +209,7 @@ footer a{color:${c.accent}}
   </div>
 </section>
 
-<section class="services">
+<section class="services" id="services">
   <div class="sec-label">What We Offer</div>
   <h2 class="sec-title">Our <span>Services</span></h2>
   <div class="grid">
@@ -228,7 +236,7 @@ footer a{color:${c.accent}}
   </div>
 </section>
 
-<section class="about-sec">
+<section class="about-sec" id="about">
   <div class="about-inner">
     <div class="sec-label">About Us</div>
     <h2 class="sec-title">Who <span>We Are</span></h2>
@@ -246,10 +254,14 @@ footer a{color:${c.accent}}
       <div class="detail-icon">💬</div>
       <div><strong>WhatsApp</strong><a href="${whatsappLink}" target="_blank" style="color:inherit">Chat with us</a></div>
     </div>
+    <div class="contact-btns">
+      <button class="btn-contact btn-save" onclick="saveContact()">📱 Save Contact</button>
+      <a href="${mapsLink}" target="_blank" class="btn-contact btn-map">🗺️ Get Directions</a>
+    </div>
   </div>
 </section>
 
-<section class="cta-section">
+<section class="cta-section" id="contact">
   <h2 class="cta-title">Ready to <span style="color:${c.accent}">Get Started?</span></h2>
   <p class="cta-sub">${content.tagline}</p>
   <div class="cta-btns">
@@ -262,6 +274,34 @@ footer a{color:${c.accent}}
   <p>© ${new Date().getFullYear()} ${business.name} · ${business.address}</p>
   <p style="margin-top:8px">Powered by <a href="https://oflix-v2.vercel.app" target="_blank">OfliX</a></p>
 </footer>
+
+<script>
+function saveContact() {
+  var businessName = "${business.name.replace(/"/g, '\\"')}";
+  var callNumber = "${business.phone}";
+  var waNumber = "+${whatsappNumber}";
+  var address = "${business.address.replace(/"/g, '\\"')}";
+  var siteUrl = "${websiteUrl}";
+  var vcf = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    'FN:' + businessName,
+    'ORG:' + businessName,
+    'TEL;TYPE=CELL:' + callNumber,
+    'TEL;TYPE=WHATSAPP:' + waNumber,
+    'ADR;TYPE=WORK:;;' + address + ';;;;',
+    'URL:' + siteUrl,
+    'END:VCARD'
+  ].join('\\n');
+  var blob = new Blob([vcf], {type: 'text/vcard'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = businessName + '.vcf';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
 
 </body>
 </html>`

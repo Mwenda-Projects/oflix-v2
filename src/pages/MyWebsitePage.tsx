@@ -4,7 +4,6 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
-import { buildPhotoPrompt } from '@/lib/photos'
 import { cleanGeneratedHtml, isValidGeneratedHtml } from '@/lib/ai'
 import type { Business } from '@/lib/db'
 import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp } from 'lucide-react'
@@ -65,82 +64,35 @@ export default function MyWebsitePage() {
     setMessage(null)
 
     try {
-      const styles: Record<string, string> = {
-        food: 'warm and appetising — deep amber, cream, forest green.',
-        salon: 'elegant and luxurious — rose gold, soft blush, charcoal.',
-        clinic: 'clean and trustworthy — white, calm blue, soft green.',
-        retail: 'bold and modern — vibrant accent on white.',
-        school: 'inspiring and professional — navy, gold, white.',
-        transport: 'strong and reliable — dark navy, orange accent.',
-        construction: 'industrial and trustworthy — dark grey, yellow.',
-        agriculture: 'natural and earthy — green, brown, cream.',
-        tech: 'modern and minimal — dark background, electric blue.',
-        other: 'clean and professional — white with a bold colour accent.',
-      }
-
+      const currentHtml = (business as any).generated_html || ''
       const num = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
       const waLink = `https://wa.me/${num}`
+      const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address + ', Nairobi, Kenya')}`
 
-      const aiPrompt = `You are a world-class web designer. Rebuild this Nairobi business website with the following specific change requested by the owner.
+      const aiPrompt = `You are a web designer editing an existing business website. Make ONLY the requested change. Keep everything else exactly the same.
 
-BUSINESS DETAILS:
-- Name: ${business.name}
-- Type: ${business.category}
-- Description: ${business.description}
-- Phone: ${business.phone}
-- WhatsApp: ${waLink}
-- Address: ${business.address}${business.hours ? `\n- Hours: ${business.hours}` : ''}
-
-BASE DESIGN: ${styles[business.category] || styles.other}
-
-${buildPhotoPrompt(business.category)}
+CURRENT WEBSITE HTML:
+${currentHtml}
 
 OWNER'S REQUESTED CHANGE: "${editPrompt}"
 
-Apply the change while keeping all business details exactly the same.
-
 STRICT RULES:
-1. Return ONLY raw HTML. No markdown. No backticks. No explanation.
-2. Complete single file with Google Fonts, all CSS in <style>, JS in <script>.
-3. Mobile-first. Minimum 4 sections.
-4. WhatsApp button: ${waLink} — Phone: tel:${business.phone}
-5. Small "Powered by OfliX" footer.
-6. Must look premium and professional.
-7. Keep CSS efficient — under 150 lines. No complex animations. You MUST finish with </html>.
-8. SAVE CONTACT BUTTON — include this in every website:
-    Add a "Save Contact" button that generates and downloads a .vcf file when tapped.
-    The button should be prominently placed in the contact section.
-    Use this exact JavaScript to generate the vcf:
-    function saveContact() {
-      const vcf = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        'FN:' + businessName,
-        'ORG:' + businessName,
-        'TEL;TYPE=CELL:' + callNumber,
-        'TEL;TYPE=WHATSAPP:' + waNumber,
-        'ADR;TYPE=WORK:;;' + address + ';;;;',
-        'URL:' + websiteUrl,
-        'END:VCARD'
-      ].join('\n');
-      const blob = new Blob([vcf], {type: 'text/vcard'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = businessName + '.vcf';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-    Replace businessName, callNumber, waNumber, address, websiteUrl with the actual business values hardcoded as strings.
-    Style the button with a person-add icon (use unicode \u{1F4F1} or similar) and label "Save Contact".
-    Works offline once page is cached.`
+1. Return ONLY the complete modified HTML. No markdown. No backticks. No explanation.
+2. Keep ALL existing business details, phone numbers, WhatsApp links, addresses exactly as they are.
+3. Keep the Save Contact button and its JavaScript exactly as is.
+4. Keep the Get Directions button linking to: ${mapsLink}
+5. Keep WhatsApp link: ${waLink} and phone: tel:${business.phone}
+6. Keep "Powered by OfliX" in the footer.
+7. Keep footer year as ${new Date().getFullYear()}.
+8. Only change what was specifically requested. Do not redesign sections that weren't mentioned.
+9. The file MUST end with </html>.`
 
       const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 16000, // FIX: was 4000, caused truncation
+          max_tokens: 16000,
           messages: [{ role: 'user', content: aiPrompt }],
         }),
       })
@@ -206,8 +158,6 @@ STRICT RULES:
 
       {/* Top bar */}
       <div className="mwp-topbar" style={{ background: surface, borderBottom: `1px solid ${border}`, flexShrink: 0 }}>
-
-        {/* URL */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, background: isDark ? '#111' : '#F5F5F5', border: `1px solid ${border}`, borderRadius: 8, padding: '7px 10px' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#30D158', flexShrink: 0 }} />
           <span style={{ fontSize: 11, color: textMuted, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
@@ -215,7 +165,6 @@ STRICT RULES:
           </span>
         </div>
 
-        {/* Device switcher — hidden on mobile */}
         <div className="mwp-device-btns" style={{ background: isDark ? '#111' : '#F5F5F5', borderRadius: 8, border: `1px solid ${border}`, overflow: 'hidden' }}>
           {([{ id: 'mobile', icon: Smartphone }, { id: 'tablet', icon: Tablet }, { id: 'desktop', icon: Monitor }] as { id: Device; icon: any }[]).map(d => (
             <button key={d.id} onClick={() => setDevice(d.id)} style={{ width: 36, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', background: device === d.id ? accent : 'transparent', color: device === d.id ? 'white' : textMuted }}>
@@ -224,13 +173,11 @@ STRICT RULES:
           ))}
         </div>
 
-        {/* Copy — hidden on mobile */}
         <button className="mwp-copy-btn" onClick={handleCopy} style={{ alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: `1px solid ${border}`, background: surface, color: textPrimary, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
           {copied ? <CheckCheck size={13} color={accent} /> : <Copy size={13} />}
           {copied ? t('Copied!', 'Imenakiliwa!') : t('Copy link', 'Nakili')}
         </button>
 
-        {/* Open — always visible */}
         <a href={websiteUrl || '#'} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: 'none', background: accent, color: 'white', fontSize: 12, fontWeight: 600, textDecoration: 'none', flexShrink: 0 }}>
           <ExternalLink size={13} /> {t('Open', 'Fungua')}
         </a>
@@ -253,7 +200,6 @@ STRICT RULES:
                   </p>
                 </div>
               ) : (
-                // FIX: removed allow-same-origin to fix sandbox console warning
                 <iframe
                   srcDoc={generatedHtml}
                   style={{ width: '100%', height: '100%', minHeight: 500, border: 'none', display: 'block' }}
@@ -274,7 +220,6 @@ STRICT RULES:
         {/* AI Editor panel */}
         <div className="mwp-panel" style={{ background: surface, borderLeft: `1px solid ${border}` }}>
 
-          {/* Panel header — tappable on mobile to expand/collapse */}
           <div
             onClick={() => setEditorOpen(!editorOpen)}
             style={{ padding: '14px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
@@ -291,7 +236,6 @@ STRICT RULES:
             </div>
           </div>
 
-          {/* Panel body — always visible on desktop, collapsible on mobile */}
           <div style={{ display: editorOpen ? 'block' : 'none' }} className="mwp-panel-body">
             <style>{`.mwp-panel-body { display: block !important; } @media (max-width: 768px) { .mwp-panel-body { display: ${editorOpen ? 'block' : 'none'} !important; } }`}</style>
 
@@ -322,7 +266,6 @@ STRICT RULES:
                   </div>
                 )}
 
-                {/* Quick edits */}
                 <p style={{ fontSize: 11, fontWeight: 600, color: textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {t('Quick edits', 'Mabadiliko ya haraka')}
                 </p>
@@ -340,7 +283,6 @@ STRICT RULES:
                   ))}
                 </div>
 
-                {/* Custom prompt */}
                 <p style={{ fontSize: 11, fontWeight: 600, color: textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {t('Custom edit', 'Mabadiliko maalum')}
                 </p>
@@ -369,7 +311,6 @@ STRICT RULES:
             )}
           </div>
 
-          {/* On desktop — always show panel body */}
           <style>{`
             @media (min-width: 769px) {
               .mwp-panel-body { display: block !important; }
