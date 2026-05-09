@@ -197,9 +197,9 @@ footer a{color:${c.accent}}
     </h1>
     <p class="hero-sub">${content.hero_subtitle}</p>
     <div class="hero-btns">
-      <a href="${whatsappLink}" target="_blank" class="btn-wa">💬 WhatsApp Us</a>
+      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">💬 WhatsApp Us</a>
       <a href="tel:${business.phone}" class="btn-call">📞 ${business.phone}</a>
-      <a href="${mapsLink}" target="_blank" class="btn-directions">🗺️ Get Directions</a>
+      <a href="${mapsLink}" target="_blank" class="btn-directions" onclick="trackDir()">🗺️ Get Directions</a>
     </div>
     <div class="hero-stats">
       <div><div class="stat-num">5★</div><div class="stat-lbl">Rating</div></div>
@@ -252,11 +252,11 @@ footer a{color:${c.accent}}
     ${business.hours ? `<div class="detail-row"><div class="detail-icon">🕐</div><div><strong>Hours</strong>${business.hours}</div></div>` : ''}
     <div class="detail-row">
       <div class="detail-icon">💬</div>
-      <div><strong>WhatsApp</strong><a href="${whatsappLink}" target="_blank" style="color:inherit" onclick="sendTracking('whatsapp_tap')">Chat with us</a></div>
+      <div><strong>WhatsApp</strong><a href="${whatsappLink}" target="_blank" onclick="trackWA()" style="color:inherit">Chat with us</a></div>
     </div>
     <div class="contact-btns">
       <button class="btn-contact btn-save" onclick="saveContact()">📱 Save Contact</button>
-      <a href="${mapsLink}" target="_blank" class="btn-contact btn-map" onclick="sendTracking('directions_tap')">🗺️ Get Directions</a>
+      <a href="${mapsLink}" target="_blank" class="btn-contact btn-map" onclick="trackDir()">🗺️ Get Directions</a>
     </div>
   </div>
 </section>
@@ -265,7 +265,7 @@ footer a{color:${c.accent}}
   <h2 class="cta-title">Ready to <span style="color:${c.accent}">Get Started?</span></h2>
   <p class="cta-sub">${content.tagline}</p>
   <div class="cta-btns">
-    <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="sendTracking('whatsapp_tap')">💬 ${content.cta_text}</a>
+    <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">💬 ${content.cta_text}</a>
     <a href="tel:${business.phone}" class="btn-call">📞 Call ${business.phone}</a>
   </div>
 </section>
@@ -276,6 +276,15 @@ footer a{color:${c.accent}}
 </footer>
 
 <script>
+// ── Tracking — posts events to parent OfliX dashboard ──
+function trackWA() {
+  try { window.parent.postMessage({ type: 'oflix_track', event: 'whatsapp_tap' }, '*'); } catch(e) {}
+}
+function trackDir() {
+  try { window.parent.postMessage({ type: 'oflix_track', event: 'directions_tap' }, '*'); } catch(e) {}
+}
+
+// ── Save Contact — uses data URI for mobile/iOS compatibility ──
 function saveContact() {
   var businessName = "${business.name.replace(/"/g, '\\"')}";
   var callNumber = "${business.phone}";
@@ -293,30 +302,12 @@ function saveContact() {
     'URL:' + siteUrl,
     'END:VCARD'
   ].join('\\n');
-  var blob = new Blob([vcf], {type: 'text/vcard;charset=utf-8'});
-
-  if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-    window.navigator.msSaveOrOpenBlob(blob, businessName + '.vcf');
-    return;
-  }
-
-  var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = url;
+  a.href = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcf);
   a.download = businessName + '.vcf';
-  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(function () {
-    URL.revokeObjectURL(url);
-  }, 100);
-}
-
-function sendTracking(action) {
-  if (window.parent && window.parent !== window && window.parent.postMessage) {
-    window.parent.postMessage({ type: 'oflix-track', action: action }, '*')
-  }
 }
 </script>
 

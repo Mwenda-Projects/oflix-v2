@@ -138,18 +138,20 @@ export default function BusinessPage() {
     load()
   }, [slug])
 
+  // ── Listen for postMessage events from the generated iframe ──
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (!business || !event.data || event.data.type !== 'oflix-track') return
-      const action = event.data.action as 'whatsapp_tap' | 'directions_tap' | 'page_view'
-      if (!['whatsapp_tap', 'directions_tap', 'page_view'].includes(action)) return
-      trackLead(business.id, action).catch(() => {})
+    if (!business) return
+    const handleMessage = (e: MessageEvent) => {
+      if (!e.data || e.data.type !== 'oflix_track') return
+      const event = e.data.event
+      if (event === 'whatsapp_tap') {
+        trackLead(business.id, 'whatsapp_tap').catch(() => {})
+      } else if (event === 'directions_tap') {
+        trackLead(business.id, 'directions_tap').catch(() => {})
+      }
     }
-
     window.addEventListener('message', handleMessage)
-    return () => {
-      window.removeEventListener('message', handleMessage)
-    }
+    return () => window.removeEventListener('message', handleMessage)
   }, [business])
 
   const handleWhatsApp = () => {
@@ -199,18 +201,12 @@ export default function BusinessPage() {
   const hasValidGeneratedHtml = isValidGeneratedHtml(generatedHtml)
 
   // ── AI-generated website ─────────────────────────────────────
-  // If we have generated valid generated HTML, render it full screen in an iframe
   if (hasValidGeneratedHtml) {
     return (
       <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative' }}>
         <iframe
           srcDoc={generatedHtml}
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            display: 'block',
-          }}
+          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
           title={business.name}
           sandbox="allow-scripts allow-popups allow-forms"
         />
