@@ -252,11 +252,11 @@ footer a{color:${c.accent}}
     ${business.hours ? `<div class="detail-row"><div class="detail-icon">🕐</div><div><strong>Hours</strong>${business.hours}</div></div>` : ''}
     <div class="detail-row">
       <div class="detail-icon">💬</div>
-      <div><strong>WhatsApp</strong><a href="${whatsappLink}" target="_blank" style="color:inherit">Chat with us</a></div>
+      <div><strong>WhatsApp</strong><a href="${whatsappLink}" target="_blank" style="color:inherit" onclick="sendTracking('whatsapp_tap')">Chat with us</a></div>
     </div>
     <div class="contact-btns">
       <button class="btn-contact btn-save" onclick="saveContact()">📱 Save Contact</button>
-      <a href="${mapsLink}" target="_blank" class="btn-contact btn-map">🗺️ Get Directions</a>
+      <a href="${mapsLink}" target="_blank" class="btn-contact btn-map" onclick="sendTracking('directions_tap')">🗺️ Get Directions</a>
     </div>
   </div>
 </section>
@@ -265,7 +265,7 @@ footer a{color:${c.accent}}
   <h2 class="cta-title">Ready to <span style="color:${c.accent}">Get Started?</span></h2>
   <p class="cta-sub">${content.tagline}</p>
   <div class="cta-btns">
-    <a href="${whatsappLink}" target="_blank" class="btn-wa">💬 ${content.cta_text}</a>
+    <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="sendTracking('whatsapp_tap')">💬 ${content.cta_text}</a>
     <a href="tel:${business.phone}" class="btn-call">📞 Call ${business.phone}</a>
   </div>
 </section>
@@ -293,13 +293,30 @@ function saveContact() {
     'URL:' + siteUrl,
     'END:VCARD'
   ].join('\\n');
-  var blob = new Blob([vcf], {type: 'text/vcard'});
+  var blob = new Blob([vcf], {type: 'text/vcard;charset=utf-8'});
+
+  if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+    window.navigator.msSaveOrOpenBlob(blob, businessName + '.vcf');
+    return;
+  }
+
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
   a.download = businessName + '.vcf';
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(function () {
+    URL.revokeObjectURL(url);
+  }, 100);
+}
+
+function sendTracking(action) {
+  if (window.parent && window.parent !== window && window.parent.postMessage) {
+    window.parent.postMessage({ type: 'oflix-track', action: action }, '*')
+  }
 }
 </script>
 

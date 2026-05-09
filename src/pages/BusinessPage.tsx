@@ -138,6 +138,20 @@ export default function BusinessPage() {
     load()
   }, [slug])
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!business || !event.data || event.data.type !== 'oflix-track') return
+      const action = event.data.action as 'whatsapp_tap' | 'directions_tap' | 'page_view'
+      if (!['whatsapp_tap', 'directions_tap', 'page_view'].includes(action)) return
+      trackLead(business.id, action).catch(() => {})
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [business])
+
   const handleWhatsApp = () => {
     if (!business) return
     trackLead(business.id, 'whatsapp_tap').catch(() => {})
