@@ -66,7 +66,6 @@ export default function LandingPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 60,
       }}>
-        {/* Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <div style={{
             width: 28, height: 28, borderRadius: 7, background: accent,
@@ -78,7 +77,6 @@ export default function LandingPage() {
           <span style={{ fontSize: 16, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px' }}>OfliX</span>
         </Link>
 
-        {/* Desktop nav links */}
         <div className="oflix-nav-links">
           <a href="#how-it-works" style={{ fontSize: 14, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
             {t('How it works', 'Jinsi inavyofanya kazi')}
@@ -115,8 +113,6 @@ export default function LandingPage() {
 
       {/* ── Hero ────────────────────────────────────────────── */}
       <section style={{ padding: isMobile ? '52px 20px 44px' : '80px 24px 60px', textAlign: 'center', maxWidth: 760, margin: '0 auto' }}>
-
-        {/* Kenya badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           padding: '6px 14px', borderRadius: 20,
@@ -127,7 +123,6 @@ export default function LandingPage() {
           🇰🇪 {t('Built for Kenyan businesses', 'Imetengenezwa kwa biashara za Kenya')}
         </div>
 
-        {/* Headline */}
         <h1 style={{
           fontSize: isMobile ? '36px' : 'clamp(36px, 6vw, 64px)',
           fontWeight: 800, lineHeight: 1.1,
@@ -140,7 +135,6 @@ export default function LandingPage() {
           <span style={{ color: accent }}>{t('online in minutes.', 'mtandaoni kwa dakika.')}</span>
         </h1>
 
-        {/* Subheadline */}
         <p style={{
           fontSize: isMobile ? 16 : 18, color: textMuted, lineHeight: 1.7,
           maxWidth: 560, margin: '0 auto 12px', fontWeight: 400,
@@ -158,7 +152,6 @@ export default function LandingPage() {
           )}
         </p>
 
-        {/* CTAs */}
         <div className="oflix-ctas" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: 32 }}>
           <Link to="/signup" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -183,7 +176,6 @@ export default function LandingPage() {
           </a>
         </div>
 
-        {/* Trust pills */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
           {[
             t('✓ Free to start', '✓ Bure kuanza'),
@@ -202,7 +194,6 @@ export default function LandingPage() {
           borderRadius: 16, overflow: 'hidden',
           boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.4)' : '0 20px 60px rgba(0,0,0,0.1)',
         }}>
-          {/* Browser bar */}
           <div style={{
             padding: '12px 16px',
             background: isDark ? '#1A1A1A' : '#F5F5F5',
@@ -225,7 +216,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mock website content */}
           <div style={{ background: 'linear-gradient(135deg, #004C3F, #008060)', padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>💇</div>
             <h3 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 4 }}>Mama Grace Salon</h3>
@@ -512,19 +502,43 @@ export default function LandingPage() {
         padding: '32px 24px',
         borderTop: `1px solid ${border}`,
         background: isDark ? '#0A0A0B' : '#F6F6F7',
-        display: 'flex', flexWrap: 'wrap',
-        alignItems: 'center', justifyContent: 'space-between', gap: 12,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 22, height: 22, borderRadius: 5, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 11 }}>O</span>
+        <div style={{
+          display: 'flex', flexWrap: 'wrap',
+          alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          marginBottom: 16,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 22, height: 22, borderRadius: 5, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 11 }}>O</span>
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>OfliX</span>
+            <span style={{ fontSize: 12, color: textMuted }}>— {t('Built for Kenya', 'Imetengenezwa kwa Kenya')} 🇰🇪</span>
           </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>OfliX</span>
-          <span style={{ fontSize: 12, color: textMuted }}>— {t('Built for Kenya', 'Imetengenezwa kwa Kenya')} 🇰🇪</span>
+          <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>
+            © {new Date().getFullYear()} OfliX. {t('All rights reserved.', 'Haki zote zimehifadhiwa.')}
+          </p>
         </div>
-        <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>
-          © {new Date().getFullYear()} OfliX. {t('All rights reserved.', 'Haki zote zimehifadhiwa.')}
-        </p>
+
+        {/* Legal links */}
+        <div style={{
+          borderTop: `1px solid ${border}`,
+          paddingTop: 16,
+          display: 'flex', flexWrap: 'wrap',
+          alignItems: 'center', justifyContent: 'center', gap: 24,
+        }}>
+          <Link to="/privacy" style={{ fontSize: 12, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
+            {t('Privacy Policy', 'Sera ya Faragha')}
+          </Link>
+          <span style={{ fontSize: 12, color: border }}>·</span>
+          <Link to="/terms" style={{ fontSize: 12, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
+            {t('Terms of Service', 'Masharti ya Huduma')}
+          </Link>
+          <span style={{ fontSize: 12, color: border }}>·</span>
+          <a href="mailto:mwendantony28@gmail.com" style={{ fontSize: 12, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
+            {t('Contact', 'Wasiliana')}
+          </a>
+        </div>
       </footer>
     </div>
   )
