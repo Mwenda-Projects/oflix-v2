@@ -276,7 +276,6 @@ footer a{color:${c.accent}}
 </footer>
 
 <script>
-// ── Tracking — posts events to parent OfliX dashboard ──
 function trackWA() {
   try { window.parent.postMessage({ type: 'oflix_track', event: 'whatsapp_tap' }, '*'); } catch(e) {}
 }
@@ -284,7 +283,6 @@ function trackDir() {
   try { window.parent.postMessage({ type: 'oflix_track', event: 'directions_tap' }, '*'); } catch(e) {}
 }
 
-// ── Save Contact — uses data URI for mobile/iOS compatibility ──
 function saveContact() {
   var businessName = "${business.name.replace(/"/g, '\\"')}";
   var callNumber = "${business.phone}";
@@ -302,12 +300,7 @@ function saveContact() {
     'URL:' + siteUrl,
     'END:VCARD'
   ].join('\\n');
-  var a = document.createElement('a');
-  a.href = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcf);
-  a.download = businessName + '.vcf';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  window.location.href = 'data:text/x-vcard;charset=utf-8,' + encodeURIComponent(vcf);
 }
 </script>
 
