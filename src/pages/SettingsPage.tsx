@@ -25,6 +25,9 @@ export default function SettingsPage() {
   const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteWebsiteConfirm, setDeleteWebsiteConfirm] = useState(false)
+  const [deletingWebsite, setDeletingWebsite] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
 
   useEffect(() => {
@@ -88,6 +91,37 @@ export default function SettingsPage() {
       setError('Something went wrong while regenerating. Please try again.')
     }
     setRegenerating(false)
+  }
+
+  // ── Delete website only (keeps account) ──────────────────────
+  const handleDeleteWebsite = async () => {
+    if (!business) return
+    setDeletingWebsite(true)
+    try {
+      await updateBusiness(business.id, { generated_html: null } as any)
+      setBusiness({ ...business, generated_html: null } as any)
+      setDeleteWebsiteConfirm(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch {
+      setError('Failed to delete website. Please try again.')
+    }
+    setDeletingWebsite(false)
+  }
+
+  // ── Delete entire account ─────────────────────────────────────
+  const handleDeleteAccount = async () => {
+    if (!business || !user) return
+    setDeletingAccount(true)
+    try {
+      // Delete business record (cascades to leads via RLS)
+      await updateBusiness(business.id, { generated_html: null, is_live: false } as any)
+      await signOut()
+      navigate('/')
+    } catch {
+      setError('Failed to delete account. Please contact support.')
+      setDeletingAccount(false)
+    }
   }
 
   const bg = isDark ? '#0F1011' : '#F6F6F7'
@@ -220,7 +254,9 @@ export default function SettingsPage() {
         {!loading && business && (
           <Section title={t('Your website', 'Tovuti yako')} subtitle={t('Manage your public business page', 'Simamia ukurasa wako wa umma wa biashara')}>
             <Row icon={Globe} label={t('Website status', 'Hali ya tovuti')} value={`oflix.co.ke/b/${business.slug}`} action={() => window.open(`/b/${business.slug}`, '_blank')} actionLabel={t('View', 'Angalia')} actionStyle="outline" />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', gap: 12 }}>
+
+            {/* Regenerate */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${rowBorder}`, gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 7, background: subscription.canRegenerate ? (isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5') : 'rgba(124,58,237,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Sparkles size={13} color={subscription.canRegenerate ? accent : '#7C3AED'} />
@@ -248,6 +284,46 @@ export default function SettingsPage() {
                   <><div style={{ width: 10, height: 10, borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />{t('Regenerating...', 'Inajenga upya...')}</>
                 ) : subscription.canRegenerate ? t('Regenerate', 'Jenga upya') : t('Upgrade to unlock', 'Boresha kufungua')}
               </button>
+            </div>
+
+            {/* ── Delete website only ── */}
+            <div style={{ padding: '14px 20px' }}>
+              {!deleteWebsiteConfirm ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 7, background: 'rgba(255,69,58,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Trash2 size={13} color="#FF453A" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: '#FF453A' }}>{t('Delete website', 'Futa tovuti')}</div>
+                      <div style={{ fontSize: 12, color: textMuted }}>{t('Remove your generated site — your account stays', 'Ondoa tovuti iliyotengenezwa — akaunti yako inabaki')}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDeleteWebsiteConfirm(true)}
+                    style={{ padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,69,58,0.3)', background: 'transparent', color: '#FF453A', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}
+                  >
+                    {t('Delete', 'Futa')}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ background: 'rgba(255,69,58,0.06)', border: '1px solid rgba(255,69,58,0.2)', borderRadius: 8, padding: '14px 16px' }}>
+                  <p style={{ fontSize: 13, color: '#FF453A', fontWeight: 600, marginBottom: 4 }}>{t('Delete your website?', 'Futa tovuti yako?')}</p>
+                  <p style={{ fontSize: 12, color: textMuted, marginBottom: 12 }}>{t('Your account and business details stay. Only the generated website is removed. You can regenerate anytime.', 'Akaunti yako na maelezo ya biashara yanabaki. Tovuti iliyotengenezwa tu ndiyo itafutwa. Unaweza kujenga upya wakati wowote.')}</p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => setDeleteWebsiteConfirm(false)} style={{ padding: '7px 16px', borderRadius: 7, border: `1px solid ${border}`, background: 'transparent', color: textMuted, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                      {t('Cancel', 'Ghairi')}
+                    </button>
+                    <button
+                      onClick={handleDeleteWebsite}
+                      disabled={deletingWebsite}
+                      style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: '#FF453A', color: 'white', fontSize: 12, fontWeight: 600, cursor: deletingWebsite ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: deletingWebsite ? 0.7 : 1 }}
+                    >
+                      {deletingWebsite ? t('Deleting...', 'Inafuta...') : t('Yes, delete website', 'Ndio, futa tovuti')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </Section>
         )}
@@ -294,7 +370,7 @@ export default function SettingsPage() {
             actionStyle="outline"
           />
 
-          {/* ── Sign out ── */}
+          {/* Sign out */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${rowBorder}`, gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 30, height: 30, borderRadius: 7, background: isDark ? 'rgba(255,255,255,0.05)' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -314,7 +390,7 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          {/* ── Delete account ── */}
+          {/* Delete account */}
           <div style={{ padding: '14px 20px' }}>
             {!deleteConfirm ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -339,8 +415,12 @@ export default function SettingsPage() {
                   <button onClick={() => setDeleteConfirm(false)} style={{ padding: '7px 16px', borderRadius: 7, border: `1px solid ${border}`, background: 'transparent', color: textMuted, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
                     {t('Cancel', 'Ghairi')}
                   </button>
-                  <button style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: '#FF453A', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                    {t('Yes, delete everything', 'Ndio, futa kila kitu')}
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount}
+                    style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: '#FF453A', color: 'white', fontSize: 12, fontWeight: 600, cursor: deletingAccount ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: deletingAccount ? 0.7 : 1 }}
+                  >
+                    {deletingAccount ? t('Deleting...', 'Inafuta...') : t('Yes, delete everything', 'Ndio, futa kila kitu')}
                   </button>
                 </div>
               </div>
