@@ -208,7 +208,7 @@ export default function BusinessPage() {
           srcDoc={generatedHtml}
           style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
           title={business.name}
-          sandbox="allow-scripts allow-popups allow-forms"
+          sandbox="allow-scripts allow-popups allow-forms allow-downloads"
         />
       </div>
     )
