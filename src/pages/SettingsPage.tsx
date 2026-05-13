@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness, signOut } from '@/lib/db'
 import { generateWebsite as generateWebsiteFromAI, isValidGeneratedHtml } from '@/lib/ai'
+import { supabase } from '@/lib/supabase'
 import type { Business } from '@/lib/db'
 import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2, LogOut } from 'lucide-react'
 
@@ -109,17 +110,17 @@ export default function SettingsPage() {
     setDeletingWebsite(false)
   }
 
-  // ── Delete entire account ─────────────────────────────────────
+  // ── Delete entire account via Supabase RPC ────────────────────
   const handleDeleteAccount = async () => {
-    if (!business || !user) return
     setDeletingAccount(true)
+    setError(null)
     try {
-      // Delete business record (cascades to leads via RLS)
-      await updateBusiness(business.id, { generated_html: null, is_live: false } as any)
-      await signOut()
+      const { error: rpcError } = await supabase.rpc('delete_my_account')
+      if (rpcError) throw rpcError
       navigate('/')
-    } catch {
-      setError('Failed to delete account. Please contact support.')
+    } catch (err: any) {
+      console.error(err)
+      setError('Failed to delete account. Please contact mwendantony28@gmail.com.')
       setDeletingAccount(false)
     }
   }
@@ -286,7 +287,7 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            {/* ── Delete website only ── */}
+            {/* Delete website only */}
             <div style={{ padding: '14px 20px' }}>
               {!deleteWebsiteConfirm ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
