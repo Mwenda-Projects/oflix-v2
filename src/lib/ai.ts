@@ -301,7 +301,9 @@ function saveContact() {
     'URL:' + siteUrl,
     'END:VCARD'
   ].join('\\n');
-  window.location.href = 'data:text/x-vcard;charset=utf-8,' + encodeURIComponent(vcf);
+  setTimeout(function() {
+    window.location.href = 'data:text/x-vcard;charset=utf-8,' + encodeURIComponent(vcf);
+  }, 100);
 }
 </script>
 
