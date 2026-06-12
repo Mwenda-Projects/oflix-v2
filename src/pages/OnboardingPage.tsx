@@ -156,6 +156,7 @@ export default function OnboardingPage() {
 
       setBuildStatus('AI is designing your website...')
       const html = await generateWebsiteFromAI({
+        id: biz.id,
         name: data.businessName || '',
         category: data.category || 'other',
         description: data.description || '',

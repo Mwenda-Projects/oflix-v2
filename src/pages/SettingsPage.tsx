@@ -70,6 +70,7 @@ export default function SettingsPage() {
     setError(null)
     try {
       const html = await generateWebsiteFromAI({
+        id: business.id,
         name: business.name,
         category: business.category,
         description: business.description,
