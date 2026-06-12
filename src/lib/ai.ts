@@ -31,6 +31,7 @@ const CATEGORY_PHOTOS: Record<string, { hero: string; alt: string }> = {
 }
 
 export async function generateWebsite(business: {
+  id: string
   name: string
   category: string
   description: string
@@ -276,15 +277,25 @@ footer a{color:${c.accent}}
 </footer>
 
 <script>
-function trackWA() {
-  try { window.parent.postMessage({ type: 'oflix_track', event: 'whatsapp_tap' }, '*'); } catch(e) {}
-}
-function trackDir() {
-  try { window.parent.postMessage({ type: 'oflix_track', event: 'directions_tap' }, '*'); } catch(e) {}
+var BUSINESS_ID = "${business.id}";
+var TRACK_URL = "https://oflix-v2.vercel.app/api/track";
+
+function track(action) {
+  try { window.parent.postMessage({ type: 'oflix_track', event: action }, '*'); } catch(e) {}
+  try {
+    fetch(TRACK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businessId: BUSINESS_ID, action: action }),
+    }).catch(function(){});
+  } catch(e) {}
 }
 
+function trackWA() { track('whatsapp_tap'); }
+function trackDir() { track('directions_tap'); }
+
 function saveContact() {
-  try { window.parent.postMessage({ type: 'oflix_track', event: 'contact_save' }, '*'); } catch(e) {}
+  track('contact_save');
   var businessName = "${business.name.replace(/"/g, '\\"')}";
   var callNumber = "${business.phone}";
   var waNumber = "+${whatsappNumber}";
@@ -303,7 +314,7 @@ function saveContact() {
   ].join('\\n');
   setTimeout(function() {
     window.location.href = 'data:text/x-vcard;charset=utf-8,' + encodeURIComponent(vcf);
-  }, 100);
+  }, 300);
 }
 </script>
 
