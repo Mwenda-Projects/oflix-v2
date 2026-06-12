@@ -140,8 +140,10 @@ STRICT RULES:
     <div style={{ display: 'flex', flexDirection: 'column', background: bg, fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', paddingBottom: 70 }}>
 
       <style>{`
-        .mwp-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 120px); }
-        .mwp-preview { flex: 1; overflow: auto; }
+        .mwp-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 53px); }
+        .mwp-preview { flex: 1; overflow: auto; display: flex; flex-direction: column; }
+        .mwp-preview-inner { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 16px; background: ${isDark ? '#0A0A0B' : '#E8E8E8'}; }
+        .mwp-preview-inner iframe { flex: 1; width: 100%; min-height: 0; border: none; display: block; }
         .mwp-panel { width: 300px; flex-shrink: 0; overflow-y: auto; }
         .mwp-topbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; flex-wrap: nowrap; overflow-x: auto; }
         .mwp-device-btns { display: flex; }
@@ -149,6 +151,8 @@ STRICT RULES:
         @media (max-width: 768px) {
           .mwp-layout { flex-direction: column; height: auto; overflow: visible; }
           .mwp-preview { min-height: 60vh; }
+          .mwp-preview-inner { min-height: 60vh; }
+          .mwp-preview-inner iframe { min-height: 500px; flex: none; }
           .mwp-panel { width: 100%; border-left: none !important; border-top: 1px solid ${border}; max-height: none; }
           .mwp-device-btns { display: none; }
           .mwp-copy-btn { display: none; }
@@ -187,34 +191,36 @@ STRICT RULES:
       <div className="mwp-layout">
 
         {/* Preview pane */}
-        <div className="mwp-preview" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 16, background: isDark ? '#0A0A0B' : '#E8E8E8' }}>
-          {generatedHtml ? (
-            <div style={{ width: DEVICE_WIDTHS[device], maxWidth: '100%', minHeight: 400, background: 'white', borderRadius: device === 'desktop' ? 0 : 12, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.2)', transition: 'width 0.3s ease' }}>
-              {isGenerating ? (
-                <div style={{ width: '100%', minHeight: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#fff' }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 2s ease infinite' }}>
-                    <Sparkles size={22} color="white" />
+        <div className="mwp-preview">
+          <div className="mwp-preview-inner">
+            {generatedHtml ? (
+              <div style={{ width: DEVICE_WIDTHS[device], maxWidth: '100%', flex: 1, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: device === 'desktop' ? 0 : 12, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.2)', transition: 'width 0.3s ease' }}>
+                {isGenerating ? (
+                  <div style={{ flex: 1, minHeight: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#fff' }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 12, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 2s ease infinite' }}>
+                      <Sparkles size={22} color="white" />
+                    </div>
+                    <p style={{ fontSize: 14, color: '#6D7175', fontFamily: "'DM Sans', sans-serif" }}>
+                      {t('AI is updating your website...', 'AI inasasisha tovuti yako...')}
+                    </p>
                   </div>
-                  <p style={{ fontSize: 14, color: '#6D7175', fontFamily: "'DM Sans', sans-serif" }}>
-                    {t('AI is updating your website...', 'AI inasasisha tovuti yako...')}
-                  </p>
-                </div>
-              ) : (
-                <iframe
-                  srcDoc={generatedHtml}
-                  style={{ width: '100%', height: '100%', minHeight: 500, border: 'none', display: 'block' }}
-                  title="Website preview"
-                  sandbox="allow-scripts allow-popups"
-                />
-              )}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, textAlign: 'center', gap: 12 }}>
-              <div style={{ fontSize: 48 }}>🌐</div>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: textPrimary }}>{t('No website yet', 'Bado huna tovuti')}</h3>
-              <p style={{ fontSize: 13, color: textMuted }}>{t('Complete onboarding to generate your website.', 'Kamilisha mchakato wa kuanza.')}</p>
-            </div>
-          )}
+                ) : (
+                  <iframe
+                    srcDoc={generatedHtml}
+                    style={{ flex: 1, width: '100%', minHeight: 0, border: 'none', display: 'block' }}
+                    title="Website preview"
+                    sandbox="allow-scripts allow-popups"
+                  />
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, textAlign: 'center', gap: 12 }}>
+                <div style={{ fontSize: 48 }}>🌐</div>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: textPrimary }}>{t('No website yet', 'Bado huna tovuti')}</h3>
+                <p style={{ fontSize: 13, color: textMuted }}>{t('Complete onboarding to generate your website.', 'Kamilisha mchakato wa kuanza.')}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* AI Editor panel */}

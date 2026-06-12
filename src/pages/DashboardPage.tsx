@@ -3,7 +3,7 @@ import {
   Globe, MessageCircle, MapPin, Eye,
   Moon, Sun, ExternalLink,
   Copy, CheckCheck, Sparkles, BarChart2,
-  Settings, Share2, LogOut, Lock,
+  Settings, Share2, LogOut, Lock, PhoneCall,
 } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const location = useLocation()
 
   const [business, setBusiness] = useState<Business | null>(null)
-  const [stats, setStats] = useState({ pageViews: 0, whatsappTaps: 0, directionsTaps: 0 })
+  const [stats, setStats] = useState({ pageViews: 0, whatsappTaps: 0, directionsTaps: 0, contactSaves: 0 })
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
 
@@ -93,8 +93,11 @@ export default function DashboardPage() {
       <style>{`
         .dash-sidebar { width: 220px; flex-shrink: 0; }
         .dash-main { flex: 1; min-width: 0; overflow-x: hidden; }
-        .dash-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
         .dash-two-col { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
+        @media (max-width: 1100px) {
+          .dash-stats { grid-template-columns: repeat(2, 1fr) !important; }
+        }
         @media (max-width: 900px) {
           .dash-two-col { grid-template-columns: 1fr !important; }
         }
@@ -294,6 +297,7 @@ export default function DashboardPage() {
                   { label: t('Visitors today', 'Wageni leo'), value: stats.pageViews, icon: Eye, color: accent, lightBg: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', trend: t('Total page views', 'Jumla ya maoni') },
                   { label: t('WhatsApp taps', 'Mabonyezo ya WhatsApp'), value: stats.whatsappTaps, icon: MessageCircle, color: '#25D366', lightBg: isDark ? 'rgba(37,211,102,0.08)' : '#F0FBF4', trend: t('People who messaged you', 'Watu waliokutumia ujumbe') },
                   { label: t('Directions taps', 'Mabonyezo ya Mwelekeo'), value: stats.directionsTaps, icon: MapPin, color: '#FF9F0A', lightBg: isDark ? 'rgba(255,159,10,0.08)' : '#FFF8EE', trend: t('People coming to you', 'Watu wanaokuja kwako') },
+                  { label: t('Contact saves', 'Wasiliano Zilizohifadhiwa'), value: stats.contactSaves, icon: PhoneCall, color: '#0A84FF', lightBg: isDark ? 'rgba(10,132,255,0.08)' : '#EEF4FF', trend: t('People who saved your contact', 'Watu waliohifadhi mawasiliano yako') },
                 ].map(stat => (
                   <div key={stat.label} style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: '18px 20px' }}>
                     <div style={{ width: 36, height: 36, borderRadius: 8, background: stat.lightBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>

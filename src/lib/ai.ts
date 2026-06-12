@@ -284,6 +284,7 @@ function trackDir() {
 }
 
 function saveContact() {
+  try { window.parent.postMessage({ type: 'oflix_track', event: 'contact_save' }, '*'); } catch(e) {}
   var businessName = "${business.name.replace(/"/g, '\\"')}";
   var callNumber = "${business.phone}";
   var waNumber = "+${whatsappNumber}";

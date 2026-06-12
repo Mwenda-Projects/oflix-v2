@@ -30,7 +30,7 @@ export interface Business {
 export interface Lead {
   id: string
   business_id: string
-  action: 'whatsapp_tap' | 'directions_tap' | 'page_view'
+  action: 'whatsapp_tap' | 'directions_tap' | 'page_view' | 'contact_save'
   created_at: string
 }
 
@@ -184,11 +184,12 @@ export async function getLeadStats(businessId: string) {
     .select('action')
     .eq('business_id', businessId)
 
-  if (!data) return { pageViews: 0, whatsappTaps: 0, directionsTaps: 0 }
+  if (!data) return { pageViews: 0, whatsappTaps: 0, directionsTaps: 0, contactSaves: 0 }
 
   return {
-    pageViews: data.filter(l => l.action === 'page_view').length,
-    whatsappTaps: data.filter(l => l.action === 'whatsapp_tap').length,
-    directionsTaps: data.filter(l => l.action === 'directions_tap').length,
+    pageViews:      data.filter((l: { action: string }) => l.action === 'page_view').length,
+    whatsappTaps:   data.filter((l: { action: string }) => l.action === 'whatsapp_tap').length,
+    directionsTaps: data.filter((l: { action: string }) => l.action === 'directions_tap').length,
+    contactSaves:   data.filter((l: { action: string }) => l.action === 'contact_save').length,
   }
 }

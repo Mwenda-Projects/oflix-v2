@@ -148,6 +148,8 @@ export default function BusinessPage() {
         trackLead(business.id, 'whatsapp_tap').catch(() => {})
       } else if (event === 'directions_tap') {
         trackLead(business.id, 'directions_tap').catch(() => {})
+      } else if (event === 'contact_save') {
+        trackLead(business.id, 'contact_save').catch(() => {})
       }
     }
     window.addEventListener('message', handleMessage)
