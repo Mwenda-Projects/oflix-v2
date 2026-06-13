@@ -4,7 +4,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
-import { cleanGeneratedHtml, isValidGeneratedHtml } from '@/lib/ai'
+import { isValidGeneratedHtml } from '@/lib/ai'
 import type { Business } from '@/lib/db'
 import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -65,55 +65,111 @@ export default function MyWebsitePage() {
 
     try {
       const currentHtml = (business as any).generated_html || ''
-      const num = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
-      const waLink = `https://wa.me/${num}`
-      const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address + ', Nairobi, Kenya')}`
 
-      const aiPrompt = `You are a web designer editing an existing business website. Make ONLY the requested change. Keep everything else exactly the same.
+      const aiPrompt = `You are editing an existing business website HTML. The user wants to make a change.
 
-CURRENT WEBSITE HTML:
-${currentHtml}
+BUSINESS: ${business.name} (${business.category})
+REQUESTED CHANGE: "${editPrompt}"
 
-OWNER'S REQUESTED CHANGE: "${editPrompt}"
+Return ONLY a valid JSON object with patches to apply. No markdown, no explanation.
 
-STRICT RULES:
-1. Return ONLY the complete modified HTML. No markdown. No backticks. No explanation.
-2. Keep ALL existing business details, phone numbers, WhatsApp links, addresses exactly as they are.
-3. Keep the Save Contact button and its JavaScript exactly as is.
-4. Keep the Get Directions button linking to: ${mapsLink}
-5. Keep WhatsApp link: ${waLink} and phone: tel:${business.phone}
-6. Keep "Powered by OfliX" in the footer.
-7. Keep footer year as ${new Date().getFullYear()}.
-8. Only change what was specifically requested. Do not redesign sections that weren't mentioned.
-9. The file MUST end with </html>.`
+Patch types:
+- "css_replace": find/replace inside the <style> block
+- "html_replace": find/replace in the HTML body
+- "section_replace": replace an entire section by its id (hero, services, about, contact)
+- "section_insert": insert new HTML before </body>
+
+Rules:
+1. Use the MINIMUM number of patches needed.
+2. "find" must be a unique string that exists exactly once in the HTML.
+3. For color changes, find the exact hex or color value currently used.
+4. For structural additions (new section), use section_insert.
+5. Never patch the JavaScript tracking functions.
+6. Never change phone numbers, WhatsApp links, addresses, or business name.
+
+Return this structure:
+{
+  "patches": [
+    { "type": "css_replace", "find": "exact string to find", "replace": "new string" }
+  ]
+}`
 
       const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 8000,
+          max_tokens: 1000,
           messages: [{ role: 'user', content: aiPrompt }],
         }),
       })
 
       const data = await response.json()
-      const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
+      const raw = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
 
-      if (html) {
-        const clean = cleanGeneratedHtml(html)
-        if (!isValidGeneratedHtml(clean)) {
-          setMessage(t('AI returned incomplete website output. Please try again.', 'AI ilirudisha tovuti isiyokamilika. Jaribu tena.'))
-        } else {
-          await updateBusiness(business.id, { generated_html: clean } as any)
-          setBusiness({ ...business, generated_html: clean } as any)
-          setMessage(t('Website updated!', 'Tovuti imesasishwa!'))
-          setPrompt('')
-          setTimeout(() => setMessage(null), 3000)
-        }
-      } else {
-        setMessage(t('AI did not return website HTML. Please try again.', 'AI haikurudisha HTML ya tovuti. Jaribu tena.'))
+      if (!raw) {
+        setMessage(t('AI did not respond. Please try again.', 'AI haikujibu. Jaribu tena.'))
+        setIsGenerating(false)
+        return
       }
+
+      // Parse patch JSON
+      let parsed: { patches: { type: string; find: string; replace: string; id?: string }[] }
+      try {
+        const cleaned = raw.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim()
+        parsed = JSON.parse(cleaned)
+      } catch {
+        setMessage(t('AI returned an invalid response. Please try again.', 'AI ilirudisha jibu baya. Jaribu tena.'))
+        setIsGenerating(false)
+        return
+      }
+
+      if (!parsed.patches || parsed.patches.length === 0) {
+        setMessage(t('No changes were returned. Try rephrasing.', 'Hakuna mabadiliko yaliyorudishwa. Jaribu tena.'))
+        setIsGenerating(false)
+        return
+      }
+
+      // Apply patches to the current HTML
+      let updatedHtml = currentHtml
+      let appliedCount = 0
+
+      for (const patch of parsed.patches) {
+        if (!patch.find || !patch.replace) continue
+
+        if (patch.type === 'section_insert') {
+          // Insert before </body>
+          if (updatedHtml.includes('</body>')) {
+            updatedHtml = updatedHtml.replace('</body>', `${patch.replace}\n</body>`)
+            appliedCount++
+          }
+        } else {
+          // css_replace, html_replace, section_replace — all use find/replace
+          if (updatedHtml.includes(patch.find)) {
+            updatedHtml = updatedHtml.replace(patch.find, patch.replace)
+            appliedCount++
+          }
+        }
+      }
+
+      if (appliedCount === 0) {
+        setMessage(t('Could not apply changes. Try rephrasing.', 'Haikuweza kutumia mabadiliko. Jaribu tena.'))
+        setIsGenerating(false)
+        return
+      }
+
+      if (!isValidGeneratedHtml(updatedHtml)) {
+        setMessage(t('Edit produced invalid output. Please try again.', 'Mabadiliko yalizalisha pato baya. Jaribu tena.'))
+        setIsGenerating(false)
+        return
+      }
+
+      await updateBusiness(business.id, { generated_html: updatedHtml } as any)
+      setBusiness({ ...business, generated_html: updatedHtml } as any)
+      setMessage(t('Website updated!', 'Tovuti imesasishwa!'))
+      setPrompt('')
+      setTimeout(() => setMessage(null), 3000)
+
     } catch {
       setMessage(t('Something went wrong. Try again.', 'Hitilafu fulani. Jaribu tena.'))
     }
