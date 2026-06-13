@@ -66,31 +66,40 @@ export default function MyWebsitePage() {
     try {
       const currentHtml = (business as any).generated_html || ''
 
+      // Extract style block so AI knows exact strings to target
+      const styleMatch = currentHtml.match(/<style>([\s\S]*?)<\/style>/)
+      const styleExcerpt = styleMatch ? styleMatch[1].slice(0, 600).trim() : ''
+      const sectionIds = [...currentHtml.matchAll(/id="([^"]+)"/g)].map((m: RegExpMatchArray) => m[1]).join(', ')
+
       const aiPrompt = `You are editing an existing business website HTML. The user wants to make a change.
 
 BUSINESS: ${business.name} (${business.category})
 REQUESTED CHANGE: "${editPrompt}"
 
-Return ONLY a valid JSON object with patches to apply. No markdown, no explanation.
+CURRENT CSS (first 600 chars of <style> block — copy EXACT strings from here into your patches):
+${styleExcerpt}
+
+SECTION IDs in HTML: ${sectionIds}
+
+Return ONLY a valid JSON object with patches. No markdown, no explanation.
 
 Patch types:
 - "css_replace": find/replace inside the <style> block
 - "html_replace": find/replace in the HTML body
-- "section_replace": replace an entire section by its id (hero, services, about, contact)
 - "section_insert": insert new HTML before </body>
 
 Rules:
-1. Use the MINIMUM number of patches needed.
-2. "find" must be a unique string that exists exactly once in the HTML.
-3. For color changes, find the exact hex or color value currently used.
-4. For structural additions (new section), use section_insert.
-5. Never patch the JavaScript tracking functions.
-6. Never change phone numbers, WhatsApp links, addresses, or business name.
+1. "find" must be an EXACT string copied from the CSS shown above.
+2. Use the minimum patches needed.
+3. Never change phone numbers, WhatsApp links, addresses, or business name.
+4. Never patch the JavaScript tracking functions.
+5. For color changes, copy the exact hex value from the CSS above.
+6. For dark theme: change body background, text color, and nav background.
 
 Return this structure:
 {
   "patches": [
-    { "type": "css_replace", "find": "exact string to find", "replace": "new string" }
+    { "type": "css_replace", "find": "exact string", "replace": "new string" }
   ]
 }`
 
