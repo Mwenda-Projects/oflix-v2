@@ -39,6 +39,8 @@ export default function MyWebsitePage() {
   const [copied, setCopied] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
+  const [editCount, setEditCount] = useState(0)
+  const DAILY_EDIT_LIMIT = 5
 
   useEffect(() => {
     getMyBusiness().then(biz => {
@@ -59,6 +61,10 @@ export default function MyWebsitePage() {
   const handleEdit = async (editPrompt: string) => {
     if (!business || !editPrompt.trim()) return
     if (!subscription.canEdit) { navigate('/upgrade'); return }
+    if (editCount >= DAILY_EDIT_LIMIT) {
+      setMessage(t('Daily edit limit reached (5/day). Come back tomorrow!', 'Umefika kikomo cha mabadiliko ya leo (5/siku). Rudi kesho!'))
+      return
+    }
 
     setIsGenerating(true)
     setMessage(null)
@@ -66,115 +72,52 @@ export default function MyWebsitePage() {
     try {
       const currentHtml = (business as any).generated_html || ''
 
-      // Extract style block so AI knows exact strings to target
-      const styleMatch = currentHtml.match(/<style>([\s\S]*?)<\/style>/)
-      const styleExcerpt = styleMatch ? styleMatch[1].slice(0, 600).trim() : ''
-      const sectionIds = [...currentHtml.matchAll(/id="([^"]+)"/g)].map((m: RegExpMatchArray) => m[1]).join(', ')
+      const aiPrompt = `You are a web designer editing an existing business website. Make ONLY the requested change. Keep everything else exactly the same.
 
-      const aiPrompt = `You are editing an existing business website HTML. The user wants to make a change.
+CURRENT WEBSITE HTML:
+${currentHtml}
 
-BUSINESS: ${business.name} (${business.category})
-REQUESTED CHANGE: "${editPrompt}"
+OWNER'S REQUESTED CHANGE: "${editPrompt}"
 
-CURRENT CSS (first 600 chars of <style> block — copy EXACT strings from here into your patches):
-${styleExcerpt}
-
-SECTION IDs in HTML: ${sectionIds}
-
-Return ONLY a valid JSON object with patches. No markdown, no explanation.
-
-Patch types:
-- "css_replace": find/replace inside the <style> block
-- "html_replace": find/replace in the HTML body
-- "section_insert": insert new HTML before </body>
-
-Rules:
-1. "find" must be an EXACT string copied from the CSS shown above.
-2. Use the minimum patches needed.
-3. Never change phone numbers, WhatsApp links, addresses, or business name.
-4. Never patch the JavaScript tracking functions.
-5. For color changes, copy the exact hex value from the CSS above.
-6. For dark theme: change body background, text color, and nav background.
-
-Return this structure:
-{
-  "patches": [
-    { "type": "css_replace", "find": "exact string", "replace": "new string" }
-  ]
-}`
+STRICT RULES:
+1. Return ONLY the complete modified HTML. No markdown. No backticks. No explanation.
+2. Keep ALL existing business details, phone numbers, WhatsApp links, addresses exactly as they are.
+3. Keep the Save Contact button and its JavaScript exactly as is.
+4. Keep all tracking functions (track, trackWA, trackDir, saveContact) exactly as they are.
+5. Keep "Powered by OfliX" in the footer.
+6. Only change what was specifically requested. Do not redesign sections that were not mentioned.
+7. The file MUST start with <!DOCTYPE html> and end with </html>.`
 
       const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1000,
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8000,
           messages: [{ role: 'user', content: aiPrompt }],
         }),
       })
 
       const data = await response.json()
-      const raw = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
+      const html = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
 
-      if (!raw) {
+      if (!html) {
         setMessage(t('AI did not respond. Please try again.', 'AI haikujibu. Jaribu tena.'))
         setIsGenerating(false)
         return
       }
 
-      // Parse patch JSON
-      let parsed: { patches: { type: string; find: string; replace: string; id?: string }[] }
-      try {
-        const cleaned = raw.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim()
-        parsed = JSON.parse(cleaned)
-      } catch {
-        setMessage(t('AI returned an invalid response. Please try again.', 'AI ilirudisha jibu baya. Jaribu tena.'))
+      const clean = html.replace(/^```(?:html)?\n?/i, '').replace(/\n?```$/i, '').trim()
+
+      if (!isValidGeneratedHtml(clean)) {
+        setMessage(t('AI returned incomplete output. Please try again.', 'AI ilirudisha pato lisilo kamili. Jaribu tena.'))
         setIsGenerating(false)
         return
       }
 
-      if (!parsed.patches || parsed.patches.length === 0) {
-        setMessage(t('No changes were returned. Try rephrasing.', 'Hakuna mabadiliko yaliyorudishwa. Jaribu tena.'))
-        setIsGenerating(false)
-        return
-      }
-
-      // Apply patches to the current HTML
-      let updatedHtml = currentHtml
-      let appliedCount = 0
-
-      for (const patch of parsed.patches) {
-        if (!patch.find || !patch.replace) continue
-
-        if (patch.type === 'section_insert') {
-          // Insert before </body>
-          if (updatedHtml.includes('</body>')) {
-            updatedHtml = updatedHtml.replace('</body>', `${patch.replace}\n</body>`)
-            appliedCount++
-          }
-        } else {
-          // css_replace, html_replace, section_replace — all use find/replace
-          if (updatedHtml.includes(patch.find)) {
-            updatedHtml = updatedHtml.replace(patch.find, patch.replace)
-            appliedCount++
-          }
-        }
-      }
-
-      if (appliedCount === 0) {
-        setMessage(t('Could not apply changes. Try rephrasing.', 'Haikuweza kutumia mabadiliko. Jaribu tena.'))
-        setIsGenerating(false)
-        return
-      }
-
-      if (!isValidGeneratedHtml(updatedHtml)) {
-        setMessage(t('Edit produced invalid output. Please try again.', 'Mabadiliko yalizalisha pato baya. Jaribu tena.'))
-        setIsGenerating(false)
-        return
-      }
-
-      await updateBusiness(business.id, { generated_html: updatedHtml } as any)
-      setBusiness({ ...business, generated_html: updatedHtml } as any)
+      await updateBusiness(business.id, { generated_html: clean } as any)
+      setBusiness({ ...business, generated_html: clean } as any)
+      setEditCount(c => c + 1)
       setMessage(t('Website updated!', 'Tovuti imesasishwa!'))
       setPrompt('')
       setTimeout(() => setMessage(null), 3000)
@@ -300,6 +243,11 @@ Return this structure:
               <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>{t('Edit with AI', 'Hariri na AI')}</span>
               {!subscription.canEdit && (
                 <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(124,58,237,0.12)', color: '#7C3AED' }}>PRO</span>
+              )}
+              {subscription.canEdit && (
+                <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20, background: editCount >= DAILY_EDIT_LIMIT ? 'rgba(255,69,58,0.12)' : 'rgba(0,128,96,0.12)', color: editCount >= DAILY_EDIT_LIMIT ? '#FF453A' : '#008060' }}>
+                  {DAILY_EDIT_LIMIT - editCount}/{DAILY_EDIT_LIMIT} edits left
+                </span>
               )}
             </div>
             <div style={{ color: textMuted }}>
