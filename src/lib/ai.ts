@@ -1,4 +1,5 @@
 const PROXY_URL = 'https://oflix-v2.vercel.app/api/generate'
+const UNSPLASH_PROXY_URL = 'https://oflix-v2.vercel.app/api/unsplash'
 
 export function cleanGeneratedHtml(raw: string) {
   return raw.replace(/^```(?:html|json)?\n?/i, '').replace(/\n?```$/i, '').trim()
@@ -16,7 +17,7 @@ export function isValidGeneratedHtml(html?: string) {
     normalized.includes('</style>')
 }
 
-// Curated Unsplash photos per business category
+// Fallback photos per category — used only if Unsplash search fails
 const CATEGORY_PHOTOS: Record<string, { hero: string; alt: string }> = {
   salon:        { hero: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=80', alt: 'Professional hair salon' },
   food:         { hero: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80', alt: 'Delicious restaurant food' },
@@ -28,6 +29,41 @@ const CATEGORY_PHOTOS: Record<string, { hero: string; alt: string }> = {
   agriculture:  { hero: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1200&q=80', alt: 'Agriculture and farming' },
   tech:         { hero: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80', alt: 'Technology and digital services' },
   other:        { hero: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80', alt: 'Professional business' },
+}
+
+interface UnsplashPhoto {
+  hero: string
+  alt: string
+  photographerName?: string
+  photographerUrl?: string
+}
+
+async function fetchUnsplashPhoto(keyword: string, category: string): Promise<UnsplashPhoto> {
+  try {
+    const response = await fetch(UNSPLASH_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: keyword }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data.found) {
+        return {
+          hero: data.url,
+          alt: data.alt,
+          photographerName: data.photographerName,
+          photographerUrl: data.photographerUrl,
+        }
+      }
+    }
+  } catch {
+    // fall through to fallback
+  }
+
+  // Fallback to hardcoded category photo if Unsplash search fails or finds nothing
+  const fallback = CATEGORY_PHOTOS[category] || CATEGORY_PHOTOS.other
+  return { hero: fallback.hero, alt: fallback.alt }
 }
 
 export async function generateWebsite(business: {
@@ -55,13 +91,12 @@ export async function generateWebsite(business: {
   }
 
   const c = categoryColors[business.category] || categoryColors.other
-  const photo = CATEGORY_PHOTOS[business.category] || CATEGORY_PHOTOS.other
   const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
   const whatsappLink = `https://wa.me/${whatsappNumber}`
   const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address + ', Nairobi, Kenya')}`
   const websiteUrl = `https://oflix-v2.vercel.app/b/${business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`
 
-  // Step 1: Ask Claude ONLY for JSON content
+  // Step 1: Ask Claude for JSON content + an image search keyword
   const contentPrompt = `You are a copywriter for a Nairobi business website. Return ONLY valid JSON, no markdown, no explanation.
 
 Business:
@@ -85,7 +120,8 @@ Return this exact JSON structure:
   "service3_desc": "One sentence description",
   "service4_name": "Fourth service name",
   "service4_desc": "One sentence description",
-  "cta_text": "Call to action button text (max 5 words)"
+  "cta_text": "Call to action button text (max 5 words)",
+  "image_keyword": "A specific 2-4 word English search term for a stock photo that accurately represents THIS business (e.g. 'pharmacy medicine shelves', 'hair salon interior', 'car mechanic garage', 'plumber fixing pipes'). Be precise based on the actual description, not just the category."
 }`
 
   const response = await fetch(PROXY_URL, {
@@ -116,7 +152,11 @@ Return this exact JSON structure:
     throw new Error('Failed to parse generated content')
   }
 
-  // Step 3: Inject into hardcoded HTML template
+  // Step 3: Fetch a relevant photo from Unsplash based on the AI's keyword
+  const imageKeyword = content.image_keyword || business.category
+  const photo = await fetchUnsplashPhoto(imageKeyword, business.category)
+
+  // Step 4: Inject into hardcoded HTML template
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -273,7 +313,7 @@ footer a{color:${c.accent}}
 
 <footer>
   <p>© ${new Date().getFullYear()} ${business.name} · ${business.address}</p>
-  <p style="margin-top:8px">Powered by <a href="https://oflix-v2.vercel.app" target="_blank">OfliX</a></p>
+  <p style="margin-top:8px">Powered by <a href="https://oflix-v2.vercel.app" target="_blank">OfliX</a>${photo.photographerName ? ` · Photo by <a href="${photo.photographerUrl}?utm_source=oflix&utm_medium=referral" target="_blank">${photo.photographerName}</a> on <a href="https://unsplash.com/?utm_source=oflix&utm_medium=referral" target="_blank">Unsplash</a>` : ''}</p>
 </footer>
 
 <script>
