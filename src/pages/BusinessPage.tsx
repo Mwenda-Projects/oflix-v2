@@ -21,6 +21,11 @@ function FallbackPage({ business, onWhatsApp, onDirections }: {
   const emoji = CATEGORY_EMOJI[business.category] || '✨'
   const whatsappNumber = business.whatsapp || business.phone
 
+  // Display address: building (optional) + area — clean, shown on the page
+  const displayAddress = business.building
+    ? `${business.building}, ${business.address}`
+    : business.address
+
   return (
     <div style={{ minHeight: '100vh', background: '#F5F5F7', fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{
@@ -38,7 +43,7 @@ function FallbackPage({ business, onWhatsApp, onDirections }: {
         <h1 style={{ fontSize: 28, fontWeight: 700, color: 'white', fontFamily: "'Playfair Display', serif", letterSpacing: '-0.3px', marginBottom: 6 }}>
           {business.name}
         </h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)' }}>{business.address}</p>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)' }}>{displayAddress}</p>
       </div>
 
       <div style={{ maxWidth: 480, margin: '-40px auto 0', padding: '0 16px 40px', position: 'relative', zIndex: 1 }}>
@@ -73,7 +78,10 @@ function FallbackPage({ business, onWhatsApp, onDirections }: {
                 </div>
                 <div>
                   <p style={{ fontSize: 11, color: '#8E8E93', marginBottom: 1 }}>Location</p>
-                  <p style={{ fontSize: 14, fontWeight: 500, color: '#1D1D1F' }}>{business.address}</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: '#1D1D1F' }}>{displayAddress}</p>
+                  {business.floor_unit && (
+                    <p style={{ fontSize: 12, color: '#8E8E93', marginTop: 2 }}>{business.floor_unit}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -167,7 +175,10 @@ export default function BusinessPage() {
   const handleDirections = () => {
     if (!business) return
     trackLead(business.id, 'directions_tap').catch(() => {})
-    const url = business.google_maps_url || formatGoogleMapsUrl(business.address)
+    const mapsQueryAddress = business.building
+      ? `${business.building}, ${business.address}`
+      : business.address
+    const url = business.google_maps_url || formatGoogleMapsUrl(mapsQueryAddress)
     window.open(url, '_blank')
   }
 

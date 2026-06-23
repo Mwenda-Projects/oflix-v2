@@ -12,13 +12,15 @@ interface Collected {
   description?: string
   phone?: string
   whatsapp?: string
+  building?: string
+  floorUnit?: string
   address?: string
   hours?: string
 }
 
 // ── Steps ──────────────────────────────────────────────────────
-// Step 4 is special — it has a "same as above" option
-// so we handle it separately in the component
+// "building" and "floorUnit" are optional steps with a "Skip" option,
+// handled separately in the component alongside the WhatsApp "same as" step
 const STEPS = [
   {
     field: 'businessName',
@@ -37,10 +39,28 @@ const STEPS = [
     icon: null,
   },
   {
+    field: 'building',
+    question: 'Are you inside a mall or office complex?',
+    placeholder: 'e.g. Yaya Centre, Sarit Centre',
+    hint: 'Optional — only fill this if you operate inside a building with a name. Skip if you have a standalone shop.',
+    type: 'text',
+    icon: null,
+    optional: true,
+  },
+  {
+    field: 'floorUnit',
+    question: 'What floor and shop/unit number?',
+    placeholder: 'e.g. 2nd Floor, Shop 24',
+    hint: "Optional — helps customers find your exact unit once they arrive. We'll show this next to your location.",
+    type: 'text',
+    icon: null,
+    optional: true,
+  },
+  {
     field: 'address',
-    question: 'Where are you located?',
+    question: 'What area or street are you on?',
     placeholder: 'e.g. Tom Mboya Street, Nairobi CBD',
-    hint: 'Your customers need to know where to find you.',
+    hint: 'Your customers need to know the general area to find you.',
     type: 'text',
     icon: null,
   },
@@ -100,10 +120,21 @@ export default function OnboardingPage() {
 
   const currentStep = STEPS[step]
   const isWhatsAppStep = currentStep.field === 'whatsapp'
+  const isOptionalStep = !!currentStep.optional
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100)
   }, [step])
+
+  function goNext(next: Collected) {
+    setCollected(next)
+    setValue('')
+    if (step < STEPS.length - 1) {
+      setStep(s => s + 1)
+    } else {
+      build(next)
+    }
+  }
 
   async function handleNext() {
     const val = value.trim()
@@ -111,22 +142,19 @@ export default function OnboardingPage() {
 
     const next: Collected = { ...collected, [currentStep.field]: val }
     if (currentStep.field === 'description') next.category = detectCategory(val)
-    setCollected(next)
-    setValue('')
+    goNext(next)
+  }
 
-    if (step < STEPS.length - 1) {
-      setStep(s => s + 1)
-    } else {
-      await build(next)
-    }
+  // Skip an optional step (building / floorUnit)
+  function handleSkip() {
+    const next: Collected = { ...collected, [currentStep.field]: '' }
+    goNext(next)
   }
 
   // "Same as call number" shortcut on WhatsApp step
   function handleSameAsPhone() {
     const next: Collected = { ...collected, whatsapp: collected.phone || '' }
-    setCollected(next)
-    setValue('')
-    setStep(s => s + 1)
+    goNext(next)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -149,6 +177,8 @@ export default function OnboardingPage() {
         phone: data.phone || '',
         whatsapp: data.whatsapp || data.phone || '',
         address: data.address || '',
+        building: data.building || undefined,
+        floorUnit: data.floorUnit || undefined,
         hours: data.hours,
       })
 
@@ -163,6 +193,8 @@ export default function OnboardingPage() {
         phone: data.phone || '',
         whatsapp: data.whatsapp || data.phone || '',
         address: data.address || '',
+        building: data.building || undefined,
+        floorUnit: data.floorUnit || undefined,
         hours: data.hours,
       })
 
@@ -456,25 +488,46 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Continue button */}
-        <button
-          onClick={handleNext}
-          disabled={!value.trim()}
-          style={{
-            width: '100%', padding: '14px',
-            borderRadius: 10, border: 'none',
-            background: value.trim() ? accent : (isDark ? '#1A1A1A' : '#F0F0F0'),
-            color: value.trim() ? 'white' : textMuted,
-            fontSize: 15, fontWeight: 600,
-            cursor: value.trim() ? 'pointer' : 'not-allowed',
-            fontFamily: "'DM Sans', sans-serif",
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            transition: 'all 0.2s',
-          }}
-        >
-          {step === STEPS.length - 1 ? 'Build my website' : 'Continue'}
-          <ArrowRight size={16} />
-        </button>
+        {/* Continue / Skip buttons */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={handleNext}
+            disabled={!value.trim()}
+            style={{
+              flex: 1, padding: '14px',
+              borderRadius: 10, border: 'none',
+              background: value.trim() ? accent : (isDark ? '#1A1A1A' : '#F0F0F0'),
+              color: value.trim() ? 'white' : textMuted,
+              fontSize: 15, fontWeight: 600,
+              cursor: value.trim() ? 'pointer' : 'not-allowed',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              transition: 'all 0.2s',
+            }}
+          >
+            {step === STEPS.length - 1 ? 'Build my website' : 'Continue'}
+            <ArrowRight size={16} />
+          </button>
+
+          {isOptionalStep && (
+            <button
+              onClick={handleSkip}
+              style={{
+                padding: '14px 20px',
+                borderRadius: 10,
+                border: `1.5px solid ${inputBorder}`,
+                background: 'transparent',
+                color: textMuted,
+                fontSize: 14, fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+                flexShrink: 0,
+              }}
+            >
+              Skip
+            </button>
+          )}
+        </div>
 
         <p style={{ fontSize: 12, color: textMuted, textAlign: 'center', marginTop: 14 }}>
           Press Enter to continue

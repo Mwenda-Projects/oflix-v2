@@ -8,7 +8,7 @@ import { getMyBusiness, updateBusiness, signOut } from '@/lib/db'
 import { generateWebsite as generateWebsiteFromAI, isValidGeneratedHtml } from '@/lib/ai'
 import { supabase } from '@/lib/supabase'
 import type { Business } from '@/lib/db'
-import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Mail, Lock, Trash2, LogOut } from 'lucide-react'
+import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Building2, Mail, Lock, Trash2, LogOut } from 'lucide-react'
 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
@@ -77,6 +77,8 @@ export default function SettingsPage() {
         phone: business.phone,
         whatsapp: business.whatsapp,
         address: business.address,
+        building: business.building,
+        floorUnit: business.floor_unit,
         hours: business.hours,
       })
 
@@ -249,7 +251,9 @@ export default function SettingsPage() {
             <Row icon={Globe} label={t('Business name', 'Jina la biashara')} value={business.name} action={() => startEdit('name', business.name)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
             <Row icon={Phone} label={t('Phone number', 'Nambari ya simu')} value={business.phone} action={() => startEdit('phone', business.phone)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
             <Row icon={Clock} label={t('Business hours', 'Masaa ya biashara')} value={business.hours || t('Not set', 'Haijawekwa')} action={() => startEdit('hours', business.hours || '')} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
-            <Row icon={MapPin} label={t('Location', 'Eneo')} value={business.address} action={() => startEdit('address', business.address)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
+            <Row icon={Building2} label={t('Building / Mall name', 'Jina la jengo / mall')} value={business.building || t('Not set', 'Haijawekwa')} action={() => startEdit('building', business.building || '')} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
+            <Row icon={MapPin} label={t('Floor & unit number', 'Sakafu na nambari ya chumba')} value={business.floor_unit || t('Not set', 'Haijawekwa')} action={() => startEdit('floor_unit', business.floor_unit || '')} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
+            <Row icon={MapPin} label={t('Area / Street', 'Eneo / Mtaa')} value={business.address} action={() => startEdit('address', business.address)} actionLabel={t('Edit', 'Hariri')} actionStyle="outline" />
           </Section>
         )}
 

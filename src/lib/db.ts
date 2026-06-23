@@ -21,6 +21,8 @@ export interface Business {
   whatsapp: string
   email?: string
   address: string
+  building?: string
+  floor_unit?: string
   google_maps_url?: string
   is_live: boolean
   created_at: string
@@ -96,6 +98,8 @@ export async function createBusiness(input: {
   phone: string
   whatsapp: string
   address: string
+  building?: string
+  floorUnit?: string
   googleMapsUrl?: string
   hours?: string
 }): Promise<{ data: Business | null; error: string | null }> {
@@ -125,6 +129,8 @@ export async function createBusiness(input: {
       phone: input.phone,
       whatsapp: input.whatsapp || input.phone,
       address: input.address,
+      building: input.building || null,
+      floor_unit: input.floorUnit || null,
       google_maps_url: input.googleMapsUrl || null,
       hours: input.hours || null,
     })

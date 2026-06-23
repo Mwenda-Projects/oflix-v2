@@ -74,6 +74,8 @@ export async function generateWebsite(business: {
   phone: string
   whatsapp?: string
   address: string
+  building?: string
+  floorUnit?: string
   hours?: string
 }): Promise<string> {
 
@@ -93,7 +95,18 @@ export async function generateWebsite(business: {
   const c = categoryColors[business.category] || categoryColors.other
   const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
   const whatsappLink = `https://wa.me/${whatsappNumber}`
-  const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address + ', Nairobi, Kenya')}`
+
+  // Display address: building (optional) + area — clean, shown on the page
+  const displayAddress = business.building
+    ? `${business.building}, ${business.address}`
+    : business.address
+
+  // Maps search query: building + area — floor/unit excluded (Maps navigates to buildings, not floors)
+  const mapsQueryAddress = business.building
+    ? `${business.building}, ${business.address}`
+    : business.address
+  const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQueryAddress + ', Nairobi, Kenya')}`
+
   const websiteUrl = `https://oflix-v2.vercel.app/b/${business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`
 
   // Step 1: Ask Claude for JSON content + an image search keyword
@@ -231,7 +244,7 @@ footer a{color:${c.accent}}
   <img class="hero-img" src="${photo.hero}" alt="${photo.alt}">
   <div class="hero-overlay"></div>
   <div class="hero-body">
-    <div class="hero-tag">📍 ${business.address}</div>
+    <div class="hero-tag">📍 ${displayAddress}</div>
     <h1 class="hero-title">
       ${content.hero_title.split(' ').slice(0, 3).join(' ')}
       <span>${content.hero_title.split(' ').slice(3).join(' ')}</span>
@@ -284,7 +297,7 @@ footer a{color:${c.accent}}
     <p class="about-text">${content.about}</p>
     <div class="detail-row">
       <div class="detail-icon">📍</div>
-      <div><strong>Location</strong>${business.address}</div>
+      <div><strong>Location</strong>${displayAddress}${business.floorUnit ? `<br><span style="opacity:0.75;font-size:0.85em">${business.floorUnit}</span>` : ''}</div>
     </div>
     <div class="detail-row">
       <div class="detail-icon">📞</div>
@@ -312,7 +325,7 @@ footer a{color:${c.accent}}
 </section>
 
 <footer>
-  <p>© ${new Date().getFullYear()} ${business.name} · ${business.address}</p>
+  <p>© ${new Date().getFullYear()} ${business.name} · ${displayAddress}</p>
   <p style="margin-top:8px">Powered by <a href="https://oflix-v2.vercel.app" target="_blank">OfliX</a>${photo.photographerName ? ` · Photo by <a href="${photo.photographerUrl}?utm_source=oflix&utm_medium=referral" target="_blank">${photo.photographerName}</a> on <a href="https://unsplash.com/?utm_source=oflix&utm_medium=referral" target="_blank">Unsplash</a>` : ''}</p>
 </footer>
 
@@ -339,7 +352,7 @@ function saveContact() {
   var businessName = "${business.name.replace(/"/g, '\\"')}";
   var callNumber = "${business.phone}";
   var waNumber = "+${whatsappNumber}";
-  var address = "${business.address.replace(/"/g, '\\"')}";
+  var address = "${displayAddress.replace(/"/g, '\\"')}";
   var siteUrl = "${websiteUrl}";
   var vcf = [
     'BEGIN:VCARD',
