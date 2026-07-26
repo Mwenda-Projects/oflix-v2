@@ -4,9 +4,24 @@
 
 import { createClient } from '@supabase/supabase-js'
 
+const DURATION_DAYS = { monthly: 30, annual: 365 }
+const EXPECTED_AMOUNT = { monthly: 299, annual: 2499 }
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  // ── Verify this request actually came from Safaricom ──────────
+  // Safaricom just echoes back whatever CallbackURL we gave it, so a
+  // shared secret in that URL (never exposed to the browser) is what
+  // stops anyone who captures a CheckoutRequestID from forging a fake
+  // "payment succeeded" callback and getting Pro for free.
+  if (req.query.token !== process.env.MPESA_CALLBACK_SECRET) {
+    console.warn('Rejected mpesa-callback: invalid or missing token')
+    // Still 200 — don't give an attacker a way to distinguish "wrong
+    // token" from "processed" via status code probing.
+    return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' })
   }
 
   console.log('OfliX M-Pesa callback received:', JSON.stringify(req.body))
@@ -30,7 +45,7 @@ export default async function handler(req, res) {
     if (!isSuccess) {
       await supabase
         .from('subscriptions')
-        .update({ plan: 'free', updated_at: new Date().toISOString() })
+        .update({ plan: 'free', billing_cycle: null, updated_at: new Date().toISOString() })
         .eq('checkout_request_id', CheckoutRequestID)
 
       console.log('❌ Payment failed:', { CheckoutRequestID, ResultDesc })
@@ -64,20 +79,32 @@ export default async function handler(req, res) {
       return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' })
     }
 
-    // ── Determine plan from amount paid ──────────────────────
-    let plan = 'basic'
-    if (amount >= 999) plan = 'pro'
-    if (amount >= 499 && amount < 999) plan = 'basic'
+    // ── Determine billing cycle from the row WE created ──────
+    // billing_cycle was stored by mpesa-stk.js at STK-initiation time,
+    // which is more trustworthy than re-deriving the tier from a raw
+    // amount (fragile against future price changes/promotions).
+    let billingCycle = subscription.billing_cycle
+    if (!billingCycle) {
+      // Safety net only, for any pending row created before this field existed.
+      billingCycle = amount >= 1000 ? 'annual' : 'monthly'
+      console.warn('billing_cycle missing on subscription row — inferred from amount:', billingCycle)
+    }
 
-    // Set expiry to 31 days from now
+    // Defense in depth: flag (don't block) if the amount Safaricom
+    // actually charged doesn't match what we expected for this cycle.
+    if (EXPECTED_AMOUNT[billingCycle] && amount !== EXPECTED_AMOUNT[billingCycle]) {
+      console.warn('⚠️ Amount mismatch for callback:', { CheckoutRequestID, billingCycle, amount, expected: EXPECTED_AMOUNT[billingCycle] })
+    }
+
     const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 31)
+    expiresAt.setDate(expiresAt.getDate() + (DURATION_DAYS[billingCycle] || 30))
 
     // ── Upgrade the subscription ─────────────────────────────
     const { error: upgradeError } = await supabase
       .from('subscriptions')
       .update({
-        plan,
+        plan:          'pro',
+        billing_cycle: billingCycle,
         expires_at:    expiresAt.toISOString(),
         mpesa_phone:   phoneNumber,
         mpesa_receipt: mpesaReceiptNumber,
@@ -91,7 +118,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' })
     }
 
-    console.log(`🎉 User upgraded to ${plan.toUpperCase()} plan:`, subscription.user_id)
+    console.log(`🎉 User upgraded to PRO (${billingCycle}):`, subscription.user_id)
 
     return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' })
 

@@ -6,33 +6,32 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Check, Sparkles, ArrowLeft, Phone } from 'lucide-react'
 
-type Plan = 'basic' | 'pro'
+type Plan = 'monthly' | 'annual'
 
 const PLANS = {
-  basic: {
-    name: 'Basic',
-    price: 499,
-    color: '#008060',
-    features: [
-      'Professional AI-generated website',
-      'Website stays live forever',
-      'Visitor analytics dashboard',
-      'WhatsApp & Maps integration',
-      'Share link for customers',
-      'Kiswahili support',
-    ],
-  },
-  pro: {
-    name: 'Pro',
-    price: 999,
+  monthly: {
+    name: 'Pro Monthly',
+    price: 299,
+    period: 'month',
     color: '#7C3AED',
     features: [
-      'Everything in Basic',
-      'Edit website with AI anytime',
-      'Regenerate full new design',
-      'Quick edits — change colors, layout, sections',
+      'Custom site editing',
+      'Removal of OfliX badge',
+      'Direct WhatsApp ordering buttons',
+      'Location map',
+    ],
+  },
+  annual: {
+    name: 'Pro Annual',
+    price: 2499,
+    period: 'year',
+    color: '#7C3AED',
+    savings: 'Save ~30%',
+    features: [
+      'All Pro features',
       'Priority support',
-      'Custom domain — coming soon',
+      'Custom domain support (when live)',
+      'One M-Pesa prompt per year',
     ],
   },
 }
@@ -40,10 +39,10 @@ const PLANS = {
 export default function UpgradePage() {
   const { isDark } = useTheme()
   const { t } = useLanguage()
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const navigate = useNavigate()
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>('pro')
+  const [selectedPlan, setSelectedPlan] = useState<Plan>('annual')
   const [phone, setPhone] = useState('')
   const [step, setStep] = useState<'choose' | 'pay' | 'waiting' | 'success' | 'error'>('choose')
   const [errorMsg, setErrorMsg] = useState('')
@@ -65,6 +64,10 @@ export default function UpgradePage() {
       setErrorMsg(t('Please log in first', 'Tafadhali ingia kwanza'))
       return
     }
+    if (!session?.access_token) {
+      setErrorMsg(t('Your session has expired. Please log in again.', 'Muda wa kikao chako umeisha. Tafadhali ingia tena.'))
+      return
+    }
 
     setStep('waiting')
     setErrorMsg('')
@@ -72,10 +75,13 @@ export default function UpgradePage() {
     try {
       const response = await fetch('/api/mpesa-stk', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           phone: cleanPhone,
-          plan: selectedPlan,
+          billingCycle: selectedPlan,
           userId: user.id,
         }),
       })
@@ -101,7 +107,7 @@ export default function UpgradePage() {
             .eq('user_id', user.id)
             .single()
 
-          if (sub?.plan === selectedPlan) {
+          if (sub?.plan === 'pro') {
             clearInterval(poll)
             setStep('success')
             setTimeout(() => navigate('/dashboard'), 3000)
@@ -164,7 +170,7 @@ export default function UpgradePage() {
             )}
           </p>
           <p style={{ fontSize: 13, color: accent, fontWeight: 500 }}>
-            KES {PLANS[selectedPlan].price} → OfliX {PLANS[selectedPlan].name}
+            KES {PLANS[selectedPlan].price}/{PLANS[selectedPlan].period} → OfliX {PLANS[selectedPlan].name}
           </p>
           <p style={{ fontSize: 12, color: textMuted, marginTop: 24 }}>
             {t('Waiting for payment confirmation...', 'Tunasubiri uthibitisho wa malipo...')}
@@ -214,9 +220,9 @@ export default function UpgradePage() {
                     onClick={() => setSelectedPlan(planKey)}
                     style={{ background: surface, border: isSelected ? `2px solid ${plan.color}` : `1px solid ${border}`, borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'all 0.15s', position: 'relative' }}
                   >
-                    {planKey === 'pro' && (
+                    {planKey === 'annual' && (
                       <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: '#7C3AED', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
-                        {t('Most popular', 'Maarufu zaidi')}
+                        {t('Save ~30%', 'Okoa ~30%')}
                       </div>
                     )}
                     <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? plan.color : textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
@@ -226,7 +232,7 @@ export default function UpgradePage() {
                       KES {plan.price}
                     </div>
                     <div style={{ fontSize: 12, color: textMuted, marginBottom: 16 }}>
-                      {t('/month', '/mwezi')}
+                      {plan.period === 'year' ? t('/year', '/mwaka') : t('/month', '/mwezi')}
                     </div>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
                       {plan.features.map(f => (
@@ -246,7 +252,7 @@ export default function UpgradePage() {
               style={{ width: '100%', padding: '14px', borderRadius: 10, border: 'none', background: PLANS[selectedPlan].color, color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
               {t(`Continue with ${PLANS[selectedPlan].name}`, `Endelea na ${PLANS[selectedPlan].name}`)}
-              <span style={{ fontSize: 13, opacity: 0.85 }}>KES {PLANS[selectedPlan].price}/mo</span>
+              <span style={{ fontSize: 13, opacity: 0.85 }}>KES {PLANS[selectedPlan].price}/{PLANS[selectedPlan].period === 'year' ? 'yr' : 'mo'}</span>
             </button>
           </>
         )}
@@ -260,7 +266,7 @@ export default function UpgradePage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: isDark ? 'rgba(0,128,96,0.08)' : '#F1F8F5', borderRadius: 8, border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}` }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: textPrimary }}>OfliX {PLANS[selectedPlan].name}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: accent }}>KES {PLANS[selectedPlan].price}/mo</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: accent }}>KES {PLANS[selectedPlan].price}/{PLANS[selectedPlan].period === 'year' ? 'yr' : 'mo'}</span>
               </div>
             </div>
 

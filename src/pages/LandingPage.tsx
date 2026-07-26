@@ -363,51 +363,52 @@ export default function LandingPage() {
           <div className="pricing-grid-3">
             {[
               {
-                name: t('Free', 'Bure'),
+                name: t('Starter', 'Kianzio'),
                 price: t('Free', 'Bure'),
                 period: '',
-                desc: t('Get online and let customers find you.', 'Ingia mtandaoni na wateja wakupate.'),
+                savings: '',
+                desc: t('New users & trial validation.', 'Watumiaji wapya na majaribio.'),
                 features: [
-                  t('Professional AI-generated website', 'Tovuti ya AI ya kitaalamu'),
-                  t('WhatsApp contact button', 'Kitufe cha WhatsApp'),
-                  t('Google Maps location', 'Eneo la Google Maps'),
-                  t('Mobile-friendly design', 'Muundo wa simu'),
-                  t('Your own shareable link', 'Kiungo chako cha kushiriki'),
+                  t('Instant AI site creation', 'Uundaji wa haraka wa tovuti na AI'),
+                  t('.vcf contact save', 'Kuhifadhi anwani ya .vcf'),
+                  t('Live viewer counter', 'Kihesabu cha watazamaji moja kwa moja'),
+                  t('Standard template', 'Kiolezo cha kawaida'),
+                  t('OfliX badge', 'Alama ya OfliX'),
                 ],
                 cta: t('Start free', 'Anza bure'),
                 href: '/signup',
                 highlight: false,
               },
               {
-                name: t('Basic', 'Msingi'),
-                price: 'KES 499',
+                name: t('Pro Monthly', 'Pro Kila Mwezi'),
+                price: 'KES 299',
                 period: t('/month', '/mwezi'),
-                desc: t('Keep your website live and track your customers.', 'Weka tovuti yako hai na fuatilia wateja wako.'),
+                savings: '',
+                desc: t('For active daily traders.', 'Kwa wafanyabiashara wa kila siku.'),
                 features: [
-                  t('Everything in Free', 'Kila kitu katika Bure'),
-                  t('Website stays live forever', 'Tovuti inabaki hai daima'),
-                  t('Visitor analytics dashboard', 'Dashibodi ya takwimu za wageni'),
-                  t('WhatsApp & directions tracking', 'Ufuatiliaji wa WhatsApp na mwelekeo'),
-                  t('Pay with M-Pesa', 'Lipa na M-Pesa'),
+                  t('Custom site editing', 'Uhariri maalum wa tovuti'),
+                  t('Removal of OfliX badge', 'Kuondoa alama ya OfliX'),
+                  t('Direct WhatsApp ordering buttons', 'Vitufe vya moja kwa moja vya oda za WhatsApp'),
+                  t('Location map', 'Ramani ya eneo'),
                 ],
-                cta: t('Get Basic', 'Pata Msingi'),
-                href: '/signup?plan=basic',
+                cta: t('Get Pro Monthly', 'Pata Pro Kila Mwezi'),
+                href: '/signup?plan=pro&cycle=monthly',
                 highlight: false,
               },
               {
-                name: t('Pro', 'Pro'),
-                price: 'KES 999',
-                period: t('/month', '/mwezi'),
-                desc: t('Edit your website with AI anytime you want.', 'Hariri tovuti yako na AI wakati wowote.'),
+                name: t('Pro Annual', 'Pro Kila Mwaka'),
+                price: 'KES 2,499',
+                period: t('/year', '/mwaka'),
+                savings: t('Save ~30%', 'Okoa ~30%'),
+                desc: t('For established businesses.', 'Kwa biashara zilizoimarika.'),
                 features: [
-                  t('Everything in Basic', 'Kila kitu katika Msingi'),
-                  t('Edit website with AI anytime', 'Hariri tovuti na AI wakati wowote'),
-                  t('Regenerate full new design', 'Jenga upya muundo mpya kabisa'),
-                  t('Quick edits — colors, layout, sections', 'Mabadiliko ya haraka — rangi, mpangilio'),
+                  t('All Pro features', 'Vipengele vyote vya Pro'),
                   t('Priority support', 'Msaada wa kipaumbele'),
+                  t('Custom domain support (when live)', 'Msaada wa kikoa maalum (yatakapopatikana)'),
+                  t('One M-Pesa prompt per year', 'Ombi moja la M-Pesa kwa mwaka'),
                 ],
-                cta: t('Get Pro', 'Pata Pro'),
-                href: '/signup?plan=pro',
+                cta: t('Get Pro Annual', 'Pata Pro Kila Mwaka'),
+                href: '/signup?plan=pro&cycle=annual',
                 highlight: true,
               },
             ].map(tier => (
@@ -437,6 +438,15 @@ export default function LandingPage() {
                   {tier.period && (
                     <span style={{ fontSize: 13, color: tier.highlight ? 'rgba(255,255,255,0.6)' : textMuted }}>
                       {tier.period}
+                    </span>
+                  )}
+                  {tier.savings && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                      background: tier.highlight ? 'rgba(255,255,255,0.2)' : 'rgba(245,166,35,0.15)',
+                      color: tier.highlight ? 'white' : '#F5A623', marginLeft: 4,
+                    }}>
+                      {tier.savings}
                     </span>
                   )}
                 </div>

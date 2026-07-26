@@ -8,10 +8,16 @@ const MPESA_BASE_URL = 'https://api.safaricom.co.ke'
 const STORE_NUMBER   = '9828218'   // BusinessShortCode — same as blog
 const TILL_NUMBER    = '3206805'   // PartyB — same as blog
 
-const PLANS = {
-  basic: { amount: 499, label: 'OfliX Basic' },
-  pro:   { amount: 999, label: 'OfliX Pro'   },
+// Basic tier retired — Pro is now billed monthly or annually.
+// Amount is ALWAYS looked up here, server-side, keyed by billingCycle.
+// It is never taken from the request body, so a tampered request can
+// only select between these two fixed prices — never an arbitrary amount.
+const BILLING = {
+  monthly: { amount: 299,  label: 'OfliX Pro Monthly' },
+  annual:  { amount: 2499, label: 'OfliX Pro Annual'  },
 }
+
+const PHONE_REGEX = /^(?:0|\+?254)(7\d{8}|1\d{8})$/
 
 function getTimestamp() {
   const now = new Date()
@@ -43,31 +49,76 @@ async function getAccessToken() {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const { phone, plan, userId } = req.body
+    const { phone, billingCycle, userId } = req.body
 
-    if (!phone || !plan || !userId) {
-      return res.status(400).json({ error: 'Phone, plan and userId are required' })
+    if (!phone || !billingCycle || !userId) {
+      return res.status(400).json({ error: 'Phone, billingCycle and userId are required' })
     }
 
-    const planDetails = PLANS[plan]
-    if (!planDetails) {
-      return res.status(400).json({ error: 'Invalid plan. Choose basic or pro.' })
+    const cycleDetails = BILLING[billingCycle]
+    if (!cycleDetails) {
+      return res.status(400).json({ error: 'Invalid billing cycle. Choose monthly or annual.' })
     }
 
-    // Format phone → 254XXXXXXXXX — exact same as blog
-    const formattedPhone = phone.startsWith('0')
-      ? `254${phone.slice(1)}`
-      : phone.startsWith('+254')
-      ? phone.slice(1)
-      : phone
+    // ── Auth check: confirm the caller actually IS this userId ─────
+    // Without this, anyone can POST any userId + phone and trigger an
+    // STK push against a stranger's number, or overwrite a stranger's
+    // subscription row. The client must send its Supabase access token.
+    const authHeader = req.headers.authorization || ''
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) {
+      return res.status(401).json({ error: 'Missing authorization token' })
+    }
+
+    const supabaseAuth = createClient(
+      process.env.VITE_SUPABASE_URL,
+      process.env.VITE_SUPABASE_ANON_KEY
+    )
+    const { data: { user: callingUser }, error: authError } = await supabaseAuth.auth.getUser(token)
+    if (authError || !callingUser || callingUser.id !== userId) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    // ── Phone validation ─────────────────────────────────────────
+    const cleanPhone = phone.replace(/\s/g, '')
+    if (!PHONE_REGEX.test(cleanPhone)) {
+      return res.status(400).json({ error: 'Enter a valid Safaricom M-Pesa number.' })
+    }
+
+    const formattedPhone = cleanPhone.startsWith('0')
+      ? `254${cleanPhone.slice(1)}`
+      : cleanPhone.startsWith('+254')
+      ? cleanPhone.slice(1)
+      : cleanPhone
+
+    const supabase = createClient(
+      process.env.VITE_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+
+    // ── Lightweight throttle: block rapid repeat STK triggers ──────
+    // Stops one authenticated user from hammering Safaricom's API /
+    // spamming their own phone with repeated prompts.
+    const { data: existing } = await supabase
+      .from('subscriptions')
+      .select('updated_at, plan')
+      .eq('user_id', userId)
+      .single()
+
+    if (existing?.plan === 'pending' && existing.updated_at) {
+      const secondsSinceLast = (Date.now() - new Date(existing.updated_at).getTime()) / 1000
+      if (secondsSinceLast < 30) {
+        return res.status(429).json({ error: 'Please wait before requesting another payment prompt.' })
+      }
+    }
 
     const passkey     = process.env.VITE_MPESA_PASSKEY
-    const callbackUrl = `https://oflix-v2.vercel.app/api/mpesa-callback`
+    const callbackUrl = `https://oflix-v2.vercel.app/api/mpesa-callback?token=${process.env.MPESA_CALLBACK_SECRET}`
     const timestamp   = getTimestamp()
     const password    = Buffer.from(`${STORE_NUMBER}${passkey}${timestamp}`).toString('base64')
     const accessToken = await getAccessToken()
@@ -84,13 +135,13 @@ export default async function handler(req, res) {
         Password:          password,
         Timestamp:         timestamp,
         TransactionType:   'CustomerBuyGoodsOnline',  // exact same as blog
-        Amount:            Math.round(planDetails.amount),
+        Amount:            Math.round(cycleDetails.amount),
         PartyA:            formattedPhone,
         PartyB:            TILL_NUMBER,               // exact same as blog
         PhoneNumber:       formattedPhone,
         CallBackURL:       callbackUrl,
         AccountReference:  'OfliX',
-        TransactionDesc:   `OfliX: ${planDetails.label}`,
+        TransactionDesc:   `OfliX: ${cycleDetails.label}`,
       }),
     })
 
@@ -104,15 +155,13 @@ export default async function handler(req, res) {
       })
     }
 
-    // Save pending subscription
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
-
+    // Save pending subscription — billing_cycle is stored NOW so the
+    // callback (which only gets CheckoutRequestID from Safaricom) knows
+    // whether to activate monthly or annual once payment is confirmed.
     await supabase.from('subscriptions').upsert({
       user_id:             userId,
       plan:                'pending',
+      billing_cycle:       billingCycle,
       mpesa_phone:         formattedPhone,
       checkout_request_id: stkData.CheckoutRequestID,
       updated_at:          new Date().toISOString(),

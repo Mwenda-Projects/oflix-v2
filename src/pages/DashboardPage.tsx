@@ -71,9 +71,8 @@ export default function DashboardPage() {
 
   // Plan badge colors
   const planBadge = {
-    free:    { bg: isDark ? 'rgba(255,255,255,0.08)' : '#F0F0F0', color: isDark ? '#888' : '#666', label: 'Free' },
+    free:    { bg: isDark ? 'rgba(255,255,255,0.08)' : '#F0F0F0', color: isDark ? '#888' : '#666', label: 'Starter' },
     pending: { bg: 'rgba(255,159,10,0.15)', color: '#FF9F0A', label: 'Pending' },
-    basic:   { bg: 'rgba(0,128,96,0.15)', color: '#008060', label: 'Basic' },
     pro:     { bg: 'rgba(124,58,237,0.15)', color: '#7C3AED', label: 'Pro' },
   }
 
@@ -237,7 +236,7 @@ export default function DashboardPage() {
                   {t('Your website will expire soon', 'Tovuti yako itaisha hivi karibuni')}
                 </div>
                 <div style={{ fontSize: 12, color: textMuted }}>
-                  {t('Upgrade to Basic (KES 499/mo) to keep your website live permanently.', 'Boresha hadi Basic (KES 499/mwezi) kuweka tovuti yako hai daima.')}
+                  {t('Upgrade to Pro (KES 299/mo) to keep your website live permanently.', 'Boresha hadi Pro (KES 299/mwezi) kuweka tovuti yako hai daima.')}
                 </div>
               </div>
               <button

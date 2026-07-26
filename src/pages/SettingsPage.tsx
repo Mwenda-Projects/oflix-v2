@@ -139,7 +139,6 @@ export default function SettingsPage() {
   const planColors: Record<string, { bg: string; color: string }> = {
     free:    { bg: isDark ? 'rgba(255,255,255,0.06)' : '#F0F0F0', color: isDark ? '#666' : '#888' },
     pending: { bg: 'rgba(255,159,10,0.12)', color: '#FF9F0A' },
-    basic:   { bg: 'rgba(0,128,96,0.12)', color: '#008060' },
     pro:     { bg: 'rgba(124,58,237,0.12)', color: '#7C3AED' },
   }
   const pc = planColors[subscription.plan] || planColors.free
@@ -201,7 +200,7 @@ export default function SettingsPage() {
               <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>
                 {t('Current plan', 'Mpango wa sasa')}:
                 <span style={{ marginLeft: 6, padding: '2px 8px', borderRadius: 20, background: pc.bg, color: pc.color, fontSize: 11, fontWeight: 700 }}>
-                  {subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}
+                  {subscription.plan === 'free' ? 'Starter' : subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}
                 </span>
               </div>
               {subscription.expiresAt && (

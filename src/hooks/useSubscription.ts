@@ -5,14 +5,15 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 
-export type Plan = 'free' | 'pending' | 'basic' | 'pro'
+export type Plan = 'free' | 'pending' | 'pro'
+export type BillingCycle = 'monthly' | 'annual' | null
 
 export interface Subscription {
   plan: Plan
+  billingCycle: BillingCycle
   expiresAt: string | null
   isActive: boolean
   isFree: boolean
-  isBasic: boolean
   isPro: boolean
   canEdit: boolean      // Pro only
   canRegenerate: boolean // Pro only
@@ -21,10 +22,10 @@ export interface Subscription {
 
 const DEFAULT: Subscription = {
   plan: 'free',
+  billingCycle: null,
   expiresAt: null,
   isActive: false,
   isFree: true,
-  isBasic: false,
   isPro: false,
   canEdit: false,
   canRegenerate: false,
@@ -46,7 +47,7 @@ export function useSubscription() {
     const load = async () => {
       const { data } = await supabase
         .from('subscriptions')
-        .select('plan, expires_at')
+        .select('plan, expires_at, billing_cycle')
         .eq('user_id', user.id)
         .single()
 
@@ -57,17 +58,17 @@ export function useSubscription() {
       }
 
       const plan = (data.plan || 'free') as Plan
+      const billingCycle = (data.billing_cycle || null) as BillingCycle
       const expiresAt = data.expires_at || null
       const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false
       const effectivePlan: Plan = isExpired ? 'free' : plan
-      const isActive = effectivePlan === 'basic' || effectivePlan === 'pro'
 
       setSubscription({
         plan: effectivePlan,
+        billingCycle: effectivePlan === 'pro' ? billingCycle : null,
         expiresAt,
-        isActive,
+        isActive: effectivePlan === 'pro',
         isFree: effectivePlan === 'free' || effectivePlan === 'pending',
-        isBasic: effectivePlan === 'basic',
         isPro: effectivePlan === 'pro',
         canEdit: effectivePlan === 'pro',
         canRegenerate: effectivePlan === 'pro',

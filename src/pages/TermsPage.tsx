@@ -52,7 +52,7 @@ export default function TermsPage() {
             },
             {
               title: '4. Subscription Plans and Payments',
-              body: 'OfliX offers a Free plan and paid plans (Basic at KES 499/month, Pro at KES 999/month). Payments are made via M-Pesa STK Push. Subscriptions are monthly and renew automatically. We do not offer refunds for partial months. You may cancel at any time and your plan will remain active until the end of the billing period.'
+              body: 'OfliX offers a free Starter plan and a Pro plan available as Pro Monthly (KES 299/month) or Pro Annual (KES 2,499/year). Payments are made via M-Pesa STK Push. Subscriptions renew automatically at the end of each billing period. We do not offer refunds for partial billing periods. You may cancel at any time and your plan will remain active until the end of the current billing period.'
             },
             {
               title: '5. Your Content',
