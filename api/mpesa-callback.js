@@ -41,14 +41,33 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    // ── Payment failed ────────────────────────────────────────
+    // ── Payment failed or cancelled ───────────────────────────
     if (!isSuccess) {
+      // Restore whatever the user actually had before this attempt —
+      // NOT a hardcoded 'free'. Without this, an active Pro subscriber
+      // who cancels a renewal/cycle-switch attempt would lose their
+      // paid-for access, even though nothing about their real
+      // subscription changed.
+      const { data: pendingRow } = await supabase
+        .from('subscriptions')
+        .select('previous_plan, previous_billing_cycle, previous_expires_at')
+        .eq('checkout_request_id', CheckoutRequestID)
+        .single()
+
       await supabase
         .from('subscriptions')
-        .update({ plan: 'free', billing_cycle: null, updated_at: new Date().toISOString() })
+        .update({
+          plan:                 pendingRow?.previous_plan ?? 'free',
+          billing_cycle:        pendingRow?.previous_billing_cycle ?? null,
+          expires_at:           pendingRow?.previous_expires_at ?? null,
+          previous_plan:        null,
+          previous_billing_cycle: null,
+          previous_expires_at:  null,
+          updated_at:           new Date().toISOString(),
+        })
         .eq('checkout_request_id', CheckoutRequestID)
 
-      console.log('❌ Payment failed:', { CheckoutRequestID, ResultDesc })
+      console.log('❌ Payment failed — restored previous state:', { CheckoutRequestID, ResultDesc, restoredPlan: pendingRow?.previous_plan ?? 'free' })
       return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' })
     }
 
@@ -96,20 +115,28 @@ export default async function handler(req, res) {
       console.warn('⚠️ Amount mismatch for callback:', { CheckoutRequestID, billingCycle, amount, expected: EXPECTED_AMOUNT[billingCycle] })
     }
 
-    const expiresAt = new Date()
+    const now = new Date()
+    const currentExpiry = subscription.expires_at ? new Date(subscription.expires_at) : null
+    // If they still have time left (renewing early / switching cycle
+    // before expiry), stack the new period on top of what's remaining
+    // instead of resetting the clock to "now" and discarding paid-for days.
+    const expiresAt = (currentExpiry && currentExpiry > now) ? currentExpiry : now
     expiresAt.setDate(expiresAt.getDate() + (DURATION_DAYS[billingCycle] || 30))
 
     // ── Upgrade the subscription ─────────────────────────────
     const { error: upgradeError } = await supabase
       .from('subscriptions')
       .update({
-        plan:          'pro',
-        billing_cycle: billingCycle,
-        expires_at:    expiresAt.toISOString(),
-        mpesa_phone:   phoneNumber,
-        mpesa_receipt: mpesaReceiptNumber,
-        amount_paid:   amount,
-        updated_at:    new Date().toISOString(),
+        plan:                   'pro',
+        billing_cycle:          billingCycle,
+        expires_at:             expiresAt.toISOString(),
+        mpesa_phone:            phoneNumber,
+        mpesa_receipt:          mpesaReceiptNumber,
+        amount_paid:            amount,
+        previous_plan:          null,
+        previous_billing_cycle: null,
+        previous_expires_at:    null,
+        updated_at:             new Date().toISOString(),
       })
       .eq('checkout_request_id', CheckoutRequestID)
 

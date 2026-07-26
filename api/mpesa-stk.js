@@ -106,7 +106,7 @@ export default async function handler(req, res) {
     // spamming their own phone with repeated prompts.
     const { data: existing } = await supabase
       .from('subscriptions')
-      .select('updated_at, plan')
+      .select('updated_at, plan, billing_cycle, expires_at, previous_plan, previous_billing_cycle, previous_expires_at')
       .eq('user_id', userId)
       .single()
 
@@ -116,6 +116,16 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: 'Please wait before requesting another payment prompt.' })
       }
     }
+
+    // ── Snapshot the user's real entitlement before we touch it ────
+    // If they're already mid-attempt (plan is currently 'pending' from
+    // a prior try), carry forward THAT attempt's snapshot rather than
+    // re-snapshotting 'pending' itself — otherwise a second failed
+    // retry would permanently lose whatever they had before the FIRST
+    // attempt (e.g. an active Pro subscriber renewing early).
+    const snapshotPlan         = existing?.plan === 'pending' ? (existing.previous_plan ?? 'free') : (existing?.plan ?? 'free')
+    const snapshotBillingCycle = existing?.plan === 'pending' ? (existing.previous_billing_cycle ?? null) : (existing?.billing_cycle ?? null)
+    const snapshotExpiresAt    = existing?.plan === 'pending' ? (existing.previous_expires_at ?? null) : (existing?.expires_at ?? null)
 
     const passkey     = process.env.VITE_MPESA_PASSKEY
     const callbackUrl = `https://oflix-v2.vercel.app/api/mpesa-callback?token=${process.env.MPESA_CALLBACK_SECRET}`
@@ -158,13 +168,18 @@ export default async function handler(req, res) {
     // Save pending subscription — billing_cycle is stored NOW so the
     // callback (which only gets CheckoutRequestID from Safaricom) knows
     // whether to activate monthly or annual once payment is confirmed.
+    // previous_* fields let a FAILED payment restore exactly what the
+    // user had before, instead of wiping an active Pro subscriber to free.
     await supabase.from('subscriptions').upsert({
-      user_id:             userId,
-      plan:                'pending',
-      billing_cycle:       billingCycle,
-      mpesa_phone:         formattedPhone,
-      checkout_request_id: stkData.CheckoutRequestID,
-      updated_at:          new Date().toISOString(),
+      user_id:                userId,
+      plan:                   'pending',
+      billing_cycle:          billingCycle,
+      mpesa_phone:            formattedPhone,
+      checkout_request_id:    stkData.CheckoutRequestID,
+      previous_plan:          snapshotPlan,
+      previous_billing_cycle: snapshotBillingCycle,
+      previous_expires_at:    snapshotExpiresAt,
+      updated_at:             new Date().toISOString(),
     }, { onConflict: 'user_id' })
 
     return res.status(200).json({
