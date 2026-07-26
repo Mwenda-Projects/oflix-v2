@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase'
+
 const PROXY_URL = 'https://oflix-v2.vercel.app/api/generate'
 const UNSPLASH_PROXY_URL = 'https://oflix-v2.vercel.app/api/unsplash'
 
@@ -36,6 +38,16 @@ interface UnsplashPhoto {
   alt: string
   photographerName?: string
   photographerUrl?: string
+}
+
+// Fetches the current logged-in user's Supabase access token so /api/generate
+// can verify the caller before spending Anthropic credits on their behalf.
+async function getAuthHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) {
+    throw new Error('You must be logged in to do this.')
+  }
+  return { Authorization: `Bearer ${session.access_token}` }
 }
 
 async function fetchUnsplashPhoto(keyword: string, category: string): Promise<UnsplashPhoto> {
@@ -137,9 +149,11 @@ Return this exact JSON structure:
   "image_keyword": "A specific 2-4 word English search term for a stock photo that accurately represents THIS business (e.g. 'pharmacy medicine shelves', 'hair salon interior', 'car mechanic garage', 'plumber fixing pipes'). Be precise based on the actual description, not just the category."
 }`
 
+  const authHeader = await getAuthHeader()
+
   const response = await fetch(PROXY_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeader },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1000,

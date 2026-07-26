@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
 import { isValidGeneratedHtml } from '@/lib/ai'
+import { supabase } from '@/lib/supabase'
 import type { Business } from '@/lib/db'
 import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -88,9 +89,19 @@ STRICT RULES:
 6. Only change what was specifically requested. Do not redesign sections that were not mentioned.
 7. The file MUST start with <!DOCTYPE html> and end with </html>.`
 
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setMessage(t('Your session has expired. Please log in again.', 'Muda wa kikao chako umeisha. Tafadhali ingia tena.'))
+        setIsGenerating(false)
+        return
+      }
+
       const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 16000,
@@ -267,7 +278,7 @@ STRICT RULES:
                   {t('Pro feature', 'Kipengele cha Pro')}
                 </div>
                 <p style={{ fontSize: 12, color: textMuted, lineHeight: 1.6, marginBottom: 20 }}>
-                  {t('AI website editing is available on the Pro plan (from KES 299/month).', 'Kuhariri tovuti kwa AI kunapatikana kwenye mpango wa Pro (kuanzia KES 299/mwezi).')}
+                  {t('AI website editing is available on the Pro plan (KES 999/month).', 'Kuhariri tovuti kwa AI kunapatikana kwenye mpango wa Pro (KES 999/mwezi).')}
                 </p>
                 <button
                   onClick={() => navigate('/upgrade')}
