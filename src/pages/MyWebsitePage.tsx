@@ -278,7 +278,7 @@ STRICT RULES:
                   {t('Pro feature', 'Kipengele cha Pro')}
                 </div>
                 <p style={{ fontSize: 12, color: textMuted, lineHeight: 1.6, marginBottom: 20 }}>
-                  {t('AI website editing is available on the Pro plan (KES 999/month).', 'Kuhariri tovuti kwa AI kunapatikana kwenye mpango wa Pro (KES 999/mwezi).')}
+                  {t('AI website editing is available on the Pro plan (from KES 299/month).', 'Kuhariri tovuti kwa AI kunapatikana kwenye mpango wa Pro (kuanzia KES 299/mwezi).')}
                 </p>
                 <button
                   onClick={() => navigate('/upgrade')}

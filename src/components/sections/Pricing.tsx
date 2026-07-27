@@ -8,12 +8,11 @@ const tiers = [
       name: 'Starter',
       description: 'Perfect for getting your business online for the first time.',
       features: [
-        'Professional business website',
-        'WhatsApp contact button',
-        'Location on Google Maps',
-        'Mobile-friendly design',
-        'Your own website link',
-        'Community support',
+        'Instant AI site creation',
+        '.vcf contact save',
+        'Live viewer counter',
+        'Standard template',
+        'OfliX badge',
       ],
       cta: 'Start for free',
     },
@@ -21,12 +20,11 @@ const tiers = [
       name: 'Mwanzo',
       description: 'Kamili kwa kupata biashara yako mtandaoni kwa mara ya kwanza.',
       features: [
-        'Tovuti ya biashara ya kitaalamu',
-        'Kitufe cha mawasiliano cha WhatsApp',
-        'Eneo kwenye Google Maps',
-        'Muundo unaofaa kwa simu',
-        'Kiungo chako cha tovuti',
-        'Msaada wa jamii',
+        'Uundaji wa haraka wa tovuti na AI',
+        'Kuhifadhi anwani ya .vcf',
+        'Kihesabu cha watazamaji moja kwa moja',
+        'Kiolezo cha kawaida',
+        'Alama ya OfliX',
       ],
       cta: 'Anza bure',
     },
@@ -39,75 +37,65 @@ const tiers = [
   },
   {
     en: {
-      name: 'Business',
-      description: 'For businesses that want to stand out and grow their customer base.',
+      name: 'Pro Monthly',
+      description: 'For active daily traders who want full control over their site.',
       features: [
-        'Everything in Starter',
-        'Custom domain (yourname.co.ke)',
-        'Photo gallery for your products',
-        'Business hours display',
-        'Multiple WhatsApp numbers',
-        'Priority support',
-        'Analytics — see who visits',
+        'Custom site editing',
+        'Removal of OfliX badge',
+        'Direct WhatsApp ordering buttons',
+        'Location map',
       ],
-      cta: 'Start free trial',
+      cta: 'Get Pro Monthly',
     },
     sw: {
-      name: 'Biashara',
-      description: 'Kwa biashara zinazotaka kujitofautisha na kukuza wateja wao.',
+      name: 'Pro Kila Mwezi',
+      description: 'Kwa wafanyabiashara wa kila siku wanaotaka udhibiti kamili wa tovuti yao.',
       features: [
-        'Kila kitu katika Mwanzo',
-        'Kikoa maalum (jinalako.co.ke)',
-        'Matunzio ya picha za bidhaa zako',
-        'Uonyeshaji wa masaa ya biashara',
-        'Nambari nyingi za WhatsApp',
-        'Msaada wa kipaumbele',
-        'Takwimu — ona anayekutembelea',
+        'Uhariri maalum wa tovuti',
+        'Kuondoa alama ya OfliX',
+        'Vitufe vya moja kwa moja vya oda za WhatsApp',
+        'Ramani ya eneo',
       ],
-      cta: 'Anza jaribio bure',
+      cta: 'Pata Pro Kila Mwezi',
     },
-    price: 'KSh 999',
-    priceSw: 'KSh 999',
-    period: '/month',
-    periodSw: '/mwezi',
-    highlight: true,
-    href: '/signup?plan=business',
-  },
-  {
-    en: {
-      name: 'Growth',
-      description: 'For established businesses ready to take their online presence seriously.',
-      features: [
-        'Everything in Business',
-        'Online product catalogue',
-        'Customer enquiry forms',
-        'WhatsApp auto-reply setup',
-        'Up to 3 business locations',
-        'Dedicated account manager',
-        'Monthly performance report',
-      ],
-      cta: 'Contact us',
-    },
-    sw: {
-      name: 'Ukuaji',
-      description: 'Kwa biashara zilizoimara zinazoko tayari kuchukua uwepo wao mtandaoni kwa uzito.',
-      features: [
-        'Kila kitu katika Biashara',
-        'Katalogi ya bidhaa mtandaoni',
-        'Fomu za maswali ya wateja',
-        'Mpangilio wa majibu otomatiki ya WhatsApp',
-        'Hadi maeneo 3 ya biashara',
-        'Meneja wa akaunti aliyejitegemea',
-        'Ripoti ya utendaji ya kila mwezi',
-      ],
-      cta: 'Wasiliana nasi',
-    },
-    price: 'KSh 2,499',
-    priceSw: 'KSh 2,499',
+    price: 'KSh 299',
+    priceSw: 'KSh 299',
     period: '/month',
     periodSw: '/mwezi',
     highlight: false,
-    href: '/contact',
+    href: '/signup?plan=pro&cycle=monthly',
+  },
+  {
+    en: {
+      name: 'Pro Annual',
+      description: 'For established businesses ready to commit — pay once a year and save.',
+      features: [
+        'All Pro features',
+        'Priority support',
+        'Custom domain support (when live)',
+        'One M-Pesa prompt per year',
+      ],
+      cta: 'Get Pro Annual',
+    },
+    sw: {
+      name: 'Pro Kila Mwaka',
+      description: 'Kwa biashara zilizoimara ziko tayari kujitolea — lipa mara moja kwa mwaka na uokoe.',
+      features: [
+        'Vipengele vyote vya Pro',
+        'Msaada wa kipaumbele',
+        'Msaada wa kikoa maalum (yatakapopatikana)',
+        'Ombi moja la M-Pesa kwa mwaka',
+      ],
+      cta: 'Pata Pro Kila Mwaka',
+    },
+    price: 'KSh 2,499',
+    priceSw: 'KSh 2,499',
+    period: '/year',
+    periodSw: '/mwaka',
+    savings: 'Save ~30%',
+    savingsSw: 'Okoa ~30%',
+    highlight: true,
+    href: '/signup?plan=pro&cycle=annual',
   },
 ]
 
@@ -143,11 +131,11 @@ export default function Pricing() {
                   : 'card'
               }
             >
-              {/* Popular badge */}
+              {/* Highlight badge */}
               {tier.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-white rounded-full">
                   <span className="font-mono text-xs text-brand font-semibold">
-                    {t('Most popular', 'Maarufu zaidi')}
+                    {t(tier.savings || 'Most popular', tier.savingsSw || 'Maarufu zaidi')}
                   </span>
                 </div>
               )}
@@ -202,8 +190,8 @@ export default function Pricing() {
         {/* Bottom note */}
         <p className="text-center font-body text-sm text-light-muted dark:text-dark-muted mt-10">
           {t(
-            '🇰🇪 All prices in Kenyan Shillings. M-Pesa payments coming soon.',
-            '🇰🇪 Bei zote ni Shilingi za Kenya. Malipo ya M-Pesa yanakuja hivi karibuni.'
+            '🇰🇪 All prices in Kenyan Shillings. Paid securely via M-Pesa.',
+            '🇰🇪 Bei zote ni Shilingi za Kenya. Malipo salama kupitia M-Pesa.'
           )}
         </p>
 
