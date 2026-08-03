@@ -255,7 +255,7 @@ footer a{color:${c.accent}}
 </nav>
 
 <section class="hero">
-  <img class="hero-img" src="${photo.hero}" alt="${photo.alt}">
+  <img class="hero-img" src="${photo.hero}" alt="${photo.alt}" data-img-slot="hero">
   <div class="hero-overlay"></div>
   <div class="hero-body">
     <div class="hero-tag">📍 ${displayAddress}</div>

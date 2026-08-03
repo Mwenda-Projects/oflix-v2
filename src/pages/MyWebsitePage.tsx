@@ -6,8 +6,9 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
 import { isValidGeneratedHtml } from '@/lib/ai'
 import { supabase } from '@/lib/supabase'
+import { compressAndUpload, deleteIfOwnedImage, findImageSlots, replaceImageSlot, type ImageSlot } from '@/lib/imageUpload'
 import type { Business } from '@/lib/db'
-import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp } from 'lucide-react'
+import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp, ImagePlus, Upload } from 'lucide-react'
 
 type Device = 'mobile' | 'tablet' | 'desktop'
 
@@ -26,6 +27,18 @@ const QUICK_EDITS = [
   'Make it feel warmer and more welcoming',
 ]
 
+// Friendly labels for known slot names — falls back to the raw slot name
+// (title-cased) for anything else, so new slot types just work.
+function slotLabel(slot: string): string {
+  const known: Record<string, string> = {
+    hero: 'Cover Photo',
+    logo: 'Store Logo',
+  }
+  if (known[slot]) return known[slot]
+  if (/^gallery-\d+$/.test(slot)) return `Gallery Photo ${slot.split('-')[1]}`
+  return slot.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 export default function MyWebsitePage() {
   const { isDark } = useTheme()
   const { t } = useLanguage()
@@ -43,6 +56,11 @@ export default function MyWebsitePage() {
   const [editCount, setEditCount] = useState(0)
   const DAILY_EDIT_LIMIT = 5
 
+  // Image slot manager state
+  const [imageSlots, setImageSlots] = useState<ImageSlot[]>([])
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
+
   useEffect(() => {
     getMyBusiness().then(biz => {
       setBusiness(biz)
@@ -52,6 +70,15 @@ export default function MyWebsitePage() {
 
   const websiteUrl = business ? `${window.location.origin}/b/${business.slug}` : null
   const generatedHtml = (business as any)?.generated_html
+
+  // Re-scan for image slots whenever the underlying HTML changes
+  useEffect(() => {
+    if (generatedHtml) {
+      setImageSlots(findImageSlots(generatedHtml))
+    } else {
+      setImageSlots([])
+    }
+  }, [generatedHtml])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(websiteUrl || '').catch(() => {})
@@ -87,7 +114,8 @@ STRICT RULES:
 4. Keep all tracking functions (track, trackWA, trackDir, saveContact) exactly as they are.
 5. Keep "Powered by OfliX" in the footer.
 6. Only change what was specifically requested. Do not redesign sections that were not mentioned.
-7. The file MUST start with <!DOCTYPE html> and end with </html>.`
+7. The file MUST start with <!DOCTYPE html> and end with </html>.
+8. Every <img> tag that already has a data-img-slot attribute MUST keep that exact attribute and value, even if you move, restyle, or wrap the image. If you add brand-new images (e.g. a gallery section), give each one a data-img-slot attribute using a short lowercase name (e.g. data-img-slot="gallery-1", data-img-slot="gallery-2", incrementing in order). Never remove or renumber an existing data-img-slot value.`
 
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
@@ -140,6 +168,34 @@ STRICT RULES:
     setIsGenerating(false)
   }
 
+  const handleImageReplace = async (slot: string, file: File) => {
+    if (!business) return
+    if (!subscription.canEdit) { navigate('/upgrade'); return }
+
+    setImageError(null)
+    setUploadingSlot(slot)
+
+    try {
+      const currentHtml = (business as any).generated_html || ''
+      const previousSlot = imageSlots.find(s => s.slot === slot)
+
+      const { publicUrl } = await compressAndUpload(file, business.id, slot)
+      const updatedHtml = replaceImageSlot(currentHtml, slot, publicUrl)
+
+      await updateBusiness(business.id, { generated_html: updatedHtml } as any)
+      setBusiness({ ...business, generated_html: updatedHtml } as any)
+
+      // Clean up the old file only after the new HTML is safely saved
+      if (previousSlot?.src) {
+        deleteIfOwnedImage(previousSlot.src).catch(() => {})
+      }
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : t('Image upload failed. Try again.', 'Kupakia picha kumeshindikana. Jaribu tena.'))
+    }
+
+    setUploadingSlot(null)
+  }
+
   const bg = isDark ? '#0F1011' : '#F6F6F7'
   const surface = isDark ? '#1C1C1E' : '#FFFFFF'
   const border = isDark ? '#2A2A2A' : '#E5E5E5'
@@ -167,6 +223,7 @@ STRICT RULES:
         .mwp-topbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; flex-wrap: nowrap; overflow-x: auto; }
         .mwp-device-btns { display: flex; }
         .mwp-copy-btn { display: flex; }
+        .mwp-image-slot-thumb { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: ${isDark ? '#111' : '#eee'}; }
         @media (max-width: 768px) {
           .mwp-layout { flex-direction: column; height: auto; overflow: visible; }
           .mwp-preview { min-height: 60vh; }
@@ -242,9 +299,81 @@ STRICT RULES:
           </div>
         </div>
 
-        {/* AI Editor panel */}
+        {/* Right panel: AI Editor + Image Manager */}
         <div className="mwp-panel" style={{ background: surface, borderLeft: `1px solid ${border}` }}>
 
+          {/* ── Image manager ─────────────────────────────────── */}
+          {generatedHtml && (
+            <div style={{ borderBottom: `1px solid ${border}` }}>
+              <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 7 }}>
+                <ImagePlus size={14} color={subscription.canEdit ? accent : textMuted} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>{t('Manage Images', 'Simamia Picha')}</span>
+                {!subscription.canEdit && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(124,58,237,0.12)', color: '#7C3AED' }}>PRO</span>
+                )}
+              </div>
+
+              {!subscription.canEdit ? (
+                <div style={{ padding: '0 16px 16px' }}>
+                  <p style={{ fontSize: 12, color: textMuted, lineHeight: 1.6, marginBottom: 12 }}>
+                    {t('Upload your own photos to replace the stock images on your site. Available on Pro.', 'Pakia picha zako mwenyewe badala ya picha za hisa. Inapatikana kwenye Pro.')}
+                  </p>
+                  <button
+                    onClick={() => navigate('/upgrade')}
+                    style={{ width: '100%', padding: '10px', borderRadius: 8, border: 'none', background: '#7C3AED', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  >
+                    <Sparkles size={13} /> {t('Upgrade to Pro', 'Boresha hadi Pro')}
+                  </button>
+                </div>
+              ) : imageSlots.length === 0 ? (
+                <div style={{ padding: '0 16px 16px' }}>
+                  <p style={{ fontSize: 12, color: textMuted, lineHeight: 1.6 }}>
+                    {t('No editable image slots found on this site yet.', 'Hakuna nafasi za picha zinazoweza kuhaririwa bado.')}
+                  </p>
+                </div>
+              ) : (
+                <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {imageError && (
+                    <div style={{ padding: '8px 10px', borderRadius: 7, background: 'rgba(255,69,58,0.08)', border: '1px solid rgba(255,69,58,0.2)', fontSize: 11, color: '#FF453A' }}>
+                      {imageError}
+                    </div>
+                  )}
+                  {imageSlots.map(({ slot, src }) => {
+                    const isUploading = uploadingSlot === slot
+                    return (
+                      <div key={slot} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {src ? (
+                          <img src={src} alt={slotLabel(slot)} className="mwp-image-slot-thumb" />
+                        ) : (
+                          <div className="mwp-image-slot-thumb" />
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 12, fontWeight: 600, color: textPrimary, marginBottom: 4 }}>{slotLabel(slot)}</p>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: isUploading ? textMuted : accent, cursor: isUploading ? 'not-allowed' : 'pointer' }}>
+                            <Upload size={11} />
+                            {isUploading ? t('Uploading...', 'Inapakia...') : t('Replace', 'Badilisha')}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={isUploading}
+                              style={{ display: 'none' }}
+                              onChange={e => {
+                                const file = e.target.files?.[0]
+                                if (file) handleImageReplace(slot, file)
+                                e.target.value = ''
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── AI Editor ──────────────────────────────────────── */}
           <div
             onClick={() => setEditorOpen(!editorOpen)}
             style={{ padding: '14px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
