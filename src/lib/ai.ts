@@ -205,7 +205,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;ali
 .hero{min-height:100vh;display:flex;align-items:flex-end;padding-bottom:60px;position:relative;overflow:hidden}
 .hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,${c.bg} 0%,rgba(0,0,0,0.55) 60%,rgba(0,0,0,0.2) 100%);z-index:1}
-.hero-body{position:relative;z-index:2;padding:0 24px;max-width:700px}
+.hero-body{position:relative;z-index:2;padding:0 24px;max-width:700px;width:100%;margin:0 auto}
 .hero-tag{display:inline-block;background:${c.accent};color:${c.bg};font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:5px 12px;border-radius:2px;margin-bottom:16px}
 .hero-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:#ffffff}
 .hero-title span{color:${c.accent};display:block}
@@ -226,14 +226,17 @@ footer a{color:${c.accent}}
 .sec-label{font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${c.accent};margin-bottom:10px}
 .sec-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2rem,7vw,2.8rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:32px;line-height:1}
 .sec-title span{color:${c.accent}}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:800px}
+.section-inner{max-width:1100px;width:100%;margin:0 auto}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.hero-stats{gap:16px}.hero-btns{flex-direction:column}}
+@media(min-width:900px){.grid{grid-template-columns:repeat(4,1fr);gap:20px}}
+@media(min-width:1024px){.hero-body{max-width:900px}.about-inner{max-width:800px}}
 .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:20px;transition:border-color 0.2s}
 .card:hover{border-color:${c.accent}}
 .card-num{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:${c.accent};opacity:0.4;line-height:1;margin-bottom:8px}
 .card-name{font-weight:700;font-size:1rem;color:${c.text};margin-bottom:6px}
 .card-desc{font-size:0.85rem;color:${c.muted};line-height:1.6}
-.about-inner{max-width:700px}
+.about-inner{max-width:700px;width:100%;margin:0 auto}
 .about-text{font-size:0.95rem;color:${c.muted};line-height:1.9;margin-bottom:24px}
 .detail-row{display:flex;align-items:flex-start;gap:12px;font-size:0.9rem;color:${c.muted};margin-bottom:12px}
 .detail-icon{width:36px;height:36px;background:${c.accent};border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem}
@@ -242,6 +245,7 @@ footer a{color:${c.accent}}
 .btn-contact{display:inline-flex;align-items:center;gap:8px;padding:13px 20px;border-radius:4px;font-weight:700;font-size:0.9rem;cursor:pointer;border:none}
 .btn-save{background:${c.accent};color:${c.bg}}
 .btn-map{background:rgba(255,255,255,0.08);color:${c.text};border:1.5px solid rgba(255,255,255,0.2)!important}
+.cta-inner{max-width:700px;width:100%;margin:0 auto}
 .cta-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(1.8rem,6vw,2.5rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:8px}
 .cta-sub{color:${c.muted};font-size:0.9rem;margin-bottom:28px}
 .cta-btns{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
@@ -278,28 +282,30 @@ footer a{color:${c.accent}}
 </section>
 
 <section class="services" id="services">
-  <div class="sec-label">What We Offer</div>
-  <h2 class="sec-title">Our <span>Services</span></h2>
-  <div class="grid">
-    <div class="card">
-      <div class="card-num">01</div>
-      <div class="card-name">${content.service1_name}</div>
-      <div class="card-desc">${content.service1_desc}</div>
-    </div>
-    <div class="card">
-      <div class="card-num">02</div>
-      <div class="card-name">${content.service2_name}</div>
-      <div class="card-desc">${content.service2_desc}</div>
-    </div>
-    <div class="card">
-      <div class="card-num">03</div>
-      <div class="card-name">${content.service3_name}</div>
-      <div class="card-desc">${content.service3_desc}</div>
-    </div>
-    <div class="card">
-      <div class="card-num">04</div>
-      <div class="card-name">${content.service4_name}</div>
-      <div class="card-desc">${content.service4_desc}</div>
+  <div class="section-inner">
+    <div class="sec-label">What We Offer</div>
+    <h2 class="sec-title">Our <span>Services</span></h2>
+    <div class="grid">
+      <div class="card">
+        <div class="card-num">01</div>
+        <div class="card-name">${content.service1_name}</div>
+        <div class="card-desc">${content.service1_desc}</div>
+      </div>
+      <div class="card">
+        <div class="card-num">02</div>
+        <div class="card-name">${content.service2_name}</div>
+        <div class="card-desc">${content.service2_desc}</div>
+      </div>
+      <div class="card">
+        <div class="card-num">03</div>
+        <div class="card-name">${content.service3_name}</div>
+        <div class="card-desc">${content.service3_desc}</div>
+      </div>
+      <div class="card">
+        <div class="card-num">04</div>
+        <div class="card-name">${content.service4_name}</div>
+        <div class="card-desc">${content.service4_desc}</div>
+      </div>
     </div>
   </div>
 </section>
@@ -330,11 +336,13 @@ footer a{color:${c.accent}}
 </section>
 
 <section class="cta-section" id="contact">
-  <h2 class="cta-title">Ready to <span style="color:${c.accent}">Get Started?</span></h2>
-  <p class="cta-sub">${content.tagline}</p>
-  <div class="cta-btns">
-    <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">💬 ${content.cta_text}</a>
-    <a href="tel:${business.phone}" class="btn-call">📞 Call ${business.phone}</a>
+  <div class="cta-inner">
+    <h2 class="cta-title">Ready to <span style="color:${c.accent}">Get Started?</span></h2>
+    <p class="cta-sub">${content.tagline}</p>
+    <div class="cta-btns">
+      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">💬 ${content.cta_text}</a>
+      <a href="tel:${business.phone}" class="btn-call">📞 Call ${business.phone}</a>
+    </div>
   </div>
 </section>
 
