@@ -124,7 +124,7 @@ STRICT RULES:
         return
       }
 
-      const response = await fetch('https://oflix-v2.vercel.app/api/generate', {
+      const response = await fetch('https://oflix.space/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

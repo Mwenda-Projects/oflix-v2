@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 
-const PROXY_URL = 'https://oflix-v2.vercel.app/api/generate'
-const UNSPLASH_PROXY_URL = 'https://oflix-v2.vercel.app/api/unsplash'
+const PROXY_URL = 'https://oflix.space/api/generate'
+const UNSPLASH_PROXY_URL = 'https://oflix.space/api/unsplash'
 
 export function cleanGeneratedHtml(raw: string) {
   return raw.replace(/^```(?:html|json)?\n?/i, '').replace(/\n?```$/i, '').trim()
@@ -119,7 +119,11 @@ export async function generateWebsite(business: {
     : business.address
   const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQueryAddress + ', Nairobi, Kenya')}`
 
-  const websiteUrl = `https://oflix-v2.vercel.app/b/${business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`
+  // Business subdomain is now the canonical public URL (businessname.oflix.space),
+  // used in the footer link and the Save Contact vCard. Same slug-generation
+  // logic as before — just a different domain shape.
+  const businessSlug = business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const websiteUrl = `https://${businessSlug}.oflix.space`
 
   // Step 1: Ask Claude for JSON content + an image search keyword
   const contentPrompt = `You are a copywriter for a Nairobi business website. Return ONLY valid JSON, no markdown, no explanation.
@@ -348,12 +352,12 @@ footer a{color:${c.accent}}
 
 <footer>
   <p>© ${new Date().getFullYear()} ${business.name} · ${displayAddress}</p>
-  <p style="margin-top:8px">Powered by <a href="https://oflix-v2.vercel.app" target="_blank">OfliX</a>${photo.photographerName ? ` · Photo by <a href="${photo.photographerUrl}?utm_source=oflix&utm_medium=referral" target="_blank">${photo.photographerName}</a> on <a href="https://unsplash.com/?utm_source=oflix&utm_medium=referral" target="_blank">Unsplash</a>` : ''}</p>
+  <p style="margin-top:8px">Powered by <a href="https://oflix.space" target="_blank">OfliX</a>${photo.photographerName ? ` · Photo by <a href="${photo.photographerUrl}?utm_source=oflix&utm_medium=referral" target="_blank">${photo.photographerName}</a> on <a href="https://unsplash.com/?utm_source=oflix&utm_medium=referral" target="_blank">Unsplash</a>` : ''}</p>
 </footer>
 
 <script>
 var BUSINESS_ID = "${business.id}";
-var TRACK_URL = "https://oflix-v2.vercel.app/api/track";
+var TRACK_URL = "https://oflix.space/api/track";
 
 function track(action) {
   try { window.parent.postMessage({ type: 'oflix_track', event: action }, '*'); } catch(e) {}
