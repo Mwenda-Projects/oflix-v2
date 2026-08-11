@@ -19,7 +19,42 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import PrivacyPage from '@/pages/PrivacyPage'
 import TermsPage from '@/pages/TermsPage'
 
+// Business subdomains: businessname.oflix.space
+// Any request arriving on a subdomain of oflix.space (other than www) should
+// show ONLY that business's page, regardless of path — it's a single-purpose
+// micro-site, not the full app. Detection happens purely client-side since
+// Vercel's SPA rewrite already serves index.html for any host/path combo
+// under this project (proven by /b/:slug deep links already working today).
+const APEX_DOMAIN = 'oflix.space'
+
+function getBusinessSubdomainSlug(): string | null {
+  if (typeof window === 'undefined') return null
+  const hostname = window.location.hostname
+
+  if (hostname === APEX_DOMAIN) return null
+  if (hostname === `www.${APEX_DOMAIN}`) return null
+  if (!hostname.endsWith(`.${APEX_DOMAIN}`)) return null
+
+  return hostname.slice(0, -(`.${APEX_DOMAIN}`.length))
+}
+
 export default function App() {
+  const businessSlug = getBusinessSubdomainSlug()
+
+  // Subdomain request — bypass the full app shell and route table entirely.
+  // No ThemeProvider/LanguageProvider/AuthProvider wrapping needed here since
+  // a business's public page manages its own presentation independently
+  // (same reasoning as the existing /b/:slug route).
+  if (businessSlug) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="*" element={<BusinessPage slugOverride={businessSlug} />} />
+        </Routes>
+      </BrowserRouter>
+    )
+  }
+
   return (
     <ThemeProvider>
       <LanguageProvider>

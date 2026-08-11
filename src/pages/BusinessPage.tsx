@@ -125,8 +125,14 @@ function FallbackPage({ business, onWhatsApp, onDirections }: {
 }
 
 // ── Main component ─────────────────────────────────────────────
-export default function BusinessPage() {
-  const { slug } = useParams<{ slug: string }>()
+// Accepts an optional slugOverride — used when rendered from a business
+// subdomain (businessname.oflix.space) via App.tsx, where there is no
+// /b/:slug URL param to read. Falls back to the existing useParams()
+// behavior for the normal /b/:slug deep-link route.
+export default function BusinessPage({ slugOverride }: { slugOverride?: string } = {}) {
+  const { slug: paramSlug } = useParams<{ slug: string }>()
+  const slug = slugOverride ?? paramSlug
+
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
