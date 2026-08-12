@@ -68,7 +68,11 @@ export default function MyWebsitePage() {
     })
   }, [])
 
-  const websiteUrl = business ? `${window.location.origin}/b/${business.slug}` : null
+  // The business's public site lives on its own subdomain
+  // (businessname.oflix.space) — a different address from wherever the
+  // dashboard itself happens to be hosted, so this is built directly
+  // from the slug rather than window.location.origin.
+  const websiteUrl = business ? `https://${business.slug}.oflix.space` : null
   const generatedHtml = (business as any)?.generated_html
 
   // Re-scan for image slots whenever the underlying HTML changes

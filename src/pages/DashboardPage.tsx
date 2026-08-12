@@ -58,7 +58,11 @@ export default function DashboardPage() {
   }
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || t('there', 'wewe')
-  const websiteUrl = business ? `${window.location.origin}/b/${business.slug}` : null
+  // The business's public site lives on its own subdomain
+  // (businessname.oflix.space) — a different address from wherever the
+  // dashboard itself happens to be hosted, so this is built directly
+  // from the slug rather than window.location.origin.
+  const websiteUrl = business ? `https://${business.slug}.oflix.space` : null
   const emoji = business ? (CATEGORY_EMOJI[business.category] || '✨') : '🏪'
 
   const sidebarBg = '#1A1A1A'
