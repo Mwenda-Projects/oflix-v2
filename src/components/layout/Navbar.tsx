@@ -29,9 +29,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-ios bg-brand flex items-center justify-center shadow-ios-glow group-hover:scale-105 transition-transform">
-            <span className="font-display font-bold text-white text-sm">O</span>
-          </div>
+          <img src="/favicon.svg" alt="OfliX" className="w-8 h-8 rounded-ios flex-shrink-0 group-hover:scale-105 transition-transform" />
           <span className="font-display font-semibold text-lg text-light-text dark:text-dark-text tracking-tight">
             OfliX
           </span>

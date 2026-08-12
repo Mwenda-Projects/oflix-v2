@@ -67,13 +67,7 @@ export default function LandingPage() {
         height: 60,
       }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 7, background: accent,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 14 }}>O</span>
-          </div>
+          <img src="/favicon.svg" alt="OfliX" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
           <span style={{ fontSize: 16, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px' }}>OfliX</span>
         </Link>
 
@@ -519,10 +513,8 @@ export default function LandingPage() {
           marginBottom: 16,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 22, height: 22, borderRadius: 5, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 11 }}>O</span>
-            </div>
-            <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>OfliX</span>
+            <img src="/favicon.svg" alt="OfliX" style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>OfliX</span>
             <span style={{ fontSize: 12, color: textMuted }}>— {t('Built for Kenya', 'Imetengenezwa kwa Kenya')} 🇰🇪</span>
           </div>
           <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>

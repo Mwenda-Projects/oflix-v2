@@ -12,9 +12,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-ios bg-brand flex items-center justify-center">
-                <span className="font-display font-bold text-white text-xs">O</span>
-              </div>
+              <img src="/favicon.svg" alt="OfliX" className="w-7 h-7 rounded-ios flex-shrink-0" />
               <span className="font-display font-semibold text-light-text dark:text-dark-text">OfliX</span>
             </div>
             <p className="font-body text-sm text-light-muted dark:text-dark-muted leading-relaxed">
