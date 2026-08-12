@@ -50,13 +50,15 @@ export default async function handler(req, res) {
 
     const subscriptions = await subsResponse.json()
 
-    // Build a set of owner IDs that have an active paid plan
+    // Build a set of owner IDs that have an active paid plan.
+    // Basic tier was retired (see mpesa-stk.js) — Pro is the only paid
+    // plan now, so this only checks for that.
     const now = new Date()
     const paidOwnerIds = new Set(
       (subscriptions || [])
         .filter((s) => {
           const isExpired = s.expires_at ? new Date(s.expires_at) < now : true
-          const isPaid = s.plan === 'basic' || s.plan === 'pro'
+          const isPaid = s.plan === 'pro'
           return isPaid && !isExpired
         })
         .map((s) => s.user_id)

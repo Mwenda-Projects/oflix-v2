@@ -128,7 +128,7 @@ export default async function handler(req, res) {
     const snapshotExpiresAt    = existing?.plan === 'pending' ? (existing.previous_expires_at ?? null) : (existing?.expires_at ?? null)
 
     const passkey     = process.env.VITE_MPESA_PASSKEY
-    const callbackUrl = `https://oflix-v2.vercel.app/api/mpesa-callback?token=${process.env.MPESA_CALLBACK_SECRET}`
+    const callbackUrl = `https://oflix.space/api/mpesa-callback?token=${process.env.MPESA_CALLBACK_SECRET}`
     const timestamp   = getTimestamp()
     const password    = Buffer.from(`${STORE_NUMBER}${passkey}${timestamp}`).toString('base64')
     const accessToken = await getAccessToken()
