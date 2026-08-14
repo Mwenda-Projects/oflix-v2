@@ -152,23 +152,13 @@ export default function BusinessPage({ slugOverride }: { slugOverride?: string }
     load()
   }, [slug])
 
-  // ── Listen for postMessage events from the generated iframe ──
-  useEffect(() => {
-    if (!business) return
-    const handleMessage = (e: MessageEvent) => {
-      if (!e.data || e.data.type !== 'oflix_track') return
-      const event = e.data.event
-      if (event === 'whatsapp_tap') {
-        trackLead(business.id, 'whatsapp_tap').catch(() => {})
-      } else if (event === 'directions_tap') {
-        trackLead(business.id, 'directions_tap').catch(() => {})
-      } else if (event === 'contact_save') {
-        trackLead(business.id, 'contact_save').catch(() => {})
-      }
-    }
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
-  }, [business])
+  // NOTE: There used to be a `window.addEventListener('message', ...)` here
+  // that listened for `oflix_track` postMessages from the generated-site
+  // iframe and called trackLead() again. The generated site's own track()
+  // function ALSO fires a direct fetch() to /api/track for the same action,
+  // so that listener was double-counting every whatsapp_tap, directions_tap,
+  // and contact_save. Removed — the iframe's direct fetch() to /api/track is
+  // the single source of truth, matching how page_view is tracked above.
 
   const handleWhatsApp = () => {
     if (!business) return
