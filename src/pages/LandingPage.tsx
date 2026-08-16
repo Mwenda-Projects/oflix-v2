@@ -4,6 +4,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import {
   ArrowRight, MessageCircle, MapPin, Globe,
   Zap, Shield, Smartphone, Check, Moon, Sun,
+  Sparkles, Rocket, Store, Lightbulb,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -114,7 +115,7 @@ export default function LandingPage() {
           fontSize: 12, fontWeight: 600, color: accent,
           marginBottom: 24,
         }}>
-          🇰🇪 {t('Built for Kenyan businesses', 'Imetengenezwa kwa biashara za Kenya')}
+          {t('Built for Kenyan businesses', 'Imetengenezwa kwa biashara za Kenya')}
         </div>
 
         <h1 style={{
@@ -139,8 +140,9 @@ export default function LandingPage() {
           )}
         </p>
 
-        <p style={{ fontSize: 14, color: textMuted, marginBottom: 36 }}>
-          💡 {t(
+        <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 14, color: textMuted, marginBottom: 36 }}>
+          <Lightbulb size={14} color={accent} style={{ flexShrink: 0 }} />
+          {t(
             'If you can describe your business on WhatsApp, you can use OfliX.',
             'Kama unaweza kuelezea biashara yako kwa WhatsApp, unaweza kutumia OfliX.'
           )}
@@ -172,11 +174,13 @@ export default function LandingPage() {
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
           {[
-            t('✓ Free to start', '✓ Bure kuanza'),
-            t('✓ No credit card', '✓ Hakuna kadi ya benki'),
-            t('✓ Ready in 2 minutes', '✓ Tayari kwa dakika 2'),
+            t('Free to start', 'Bure kuanza'),
+            t('No credit card', 'Hakuna kadi ya benki'),
+            t('Ready in 2 minutes', 'Tayari kwa dakika 2'),
           ].map(pill => (
-            <span key={pill} style={{ fontSize: 13, color: accent, fontWeight: 500 }}>{pill}</span>
+            <span key={pill} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, color: accent, fontWeight: 500 }}>
+              <Check size={13} style={{ flexShrink: 0 }} /> {pill}
+            </span>
           ))}
         </div>
       </section>
@@ -206,12 +210,14 @@ export default function LandingPage() {
               fontSize: 11, color: textMuted, fontFamily: 'monospace',
               overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
             }}>
-              oflix.co.ke/b/mama-grace-salon
+              mama-grace-salon.oflix.space
             </div>
           </div>
 
           <div style={{ background: 'linear-gradient(135deg, #004C3F, #008060)', padding: '32px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>💇</div>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <Store size={26} color="white" />
+            </div>
             <h3 style={{ fontSize: 22, fontWeight: 700, color: 'white', marginBottom: 4 }}>Mama Grace Salon</h3>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 20 }}>Tom Mboya Street, Nairobi CBD</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -235,8 +241,9 @@ export default function LandingPage() {
           </div>
 
           <div style={{ padding: '12px 24px', borderTop: `1px solid ${cardBorder}`, background: isDark ? '#0D0D12' : '#F9F9F9' }}>
-            <p style={{ fontSize: 12, color: accent, textAlign: 'center', fontWeight: 500 }}>
-              ✓ {t('This is what your business will look like online', 'Hivi ndivyo biashara yako itakavyoonekana mtandaoni')}
+            <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 12, color: accent, fontWeight: 500 }}>
+              <Check size={13} style={{ flexShrink: 0 }} />
+              {t('This is what your business will look like online', 'Hivi ndivyo biashara yako itakavyoonekana mtandaoni')}
             </p>
           </div>
         </div>
@@ -262,19 +269,19 @@ export default function LandingPage() {
             {[
               {
                 step: '01',
-                icon: '💬',
+                icon: MessageCircle,
                 title: t('Describe your business', 'Elezea biashara yako'),
                 desc: t('Answer 5 simple questions — just like texting a friend.', 'Jibu maswali 5 rahisi — kama kutuma ujumbe kwa rafiki.'),
               },
               {
                 step: '02',
-                icon: '✨',
+                icon: Sparkles,
                 title: t('AI builds your website', 'AI inajenga tovuti yako'),
                 desc: t('Our AI designs a professional website specifically for your business.', 'AI yetu inabuni tovuti ya kitaalamu hasa kwa biashara yako.'),
               },
               {
                 step: '03',
-                icon: '🚀',
+                icon: Rocket,
                 title: t('Share & get customers', 'Shiriki na upate wateja'),
                 desc: t('Your website is live. Share the link on WhatsApp Status and start getting customers.', 'Tovuti yako iko hai. Shiriki kiungo kwenye Hali ya WhatsApp na anza kupata wateja.'),
               },
@@ -286,7 +293,9 @@ export default function LandingPage() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: accent, letterSpacing: '0.1em', marginBottom: 12 }}>
                   {item.step}
                 </div>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>{item.icon}</div>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                  <item.icon size={18} color={accent} />
+                </div>
                 <h3 style={{ fontSize: 16, fontWeight: 700, color: textPrimary, marginBottom: 8 }}>{item.title}</h3>
                 <p style={{ fontSize: 13, color: textMuted, lineHeight: 1.6 }}>{item.desc}</p>
               </div>
@@ -469,7 +478,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: 'center', fontSize: 13, color: textMuted, marginTop: 24 }}>
-            🇰🇪 {t('All prices in Kenyan Shillings. Pay with M-Pesa — no credit card needed.', 'Bei zote ni Shilingi za Kenya. Lipa na M-Pesa — hakuna kadi ya benki inayohitajika.')}
+            {t('All prices in Kenyan Shillings. Pay with M-Pesa — no credit card needed.', 'Bei zote ni Shilingi za Kenya. Lipa na M-Pesa — hakuna kadi ya benki inayohitajika.')}
           </p>
         </div>
       </section>
@@ -477,7 +486,9 @@ export default function LandingPage() {
       {/* ── Final CTA ─────────────────────────────────────── */}
       <section style={{ padding: isMobile ? '60px 20px' : '80px 24px', textAlign: 'center', background: surface }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>🚀</div>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <Rocket size={28} color={accent} />
+          </div>
           <h2 style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, letterSpacing: '-0.5px', color: textPrimary, marginBottom: 12 }}>
             {t('Ready to get your business online?', 'Uko tayari kuweka biashara yako mtandaoni?')}
           </h2>
@@ -515,7 +526,7 @@ export default function LandingPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <img src="/favicon.svg" alt="OfliX" style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0 }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>OfliX</span>
-            <span style={{ fontSize: 12, color: textMuted }}>— {t('Built for Kenya', 'Imetengenezwa kwa Kenya')} 🇰🇪</span>
+            <span style={{ fontSize: 12, color: textMuted }}>— {t('Built for Kenya', 'Imetengenezwa kwa Kenya')}</span>
           </div>
           <p style={{ fontSize: 12, color: textMuted, margin: 0 }}>
             © {new Date().getFullYear()} OfliX. {t('All rights reserved.', 'Haki zote zimehifadhiwa.')}

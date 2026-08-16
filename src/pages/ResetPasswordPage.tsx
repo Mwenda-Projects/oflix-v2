@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, ArrowRight, Loader2, Check, Moon, Sun } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Loader2, Check, Moon, Sun, Link2 } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { supabase } from '@/lib/supabase'
+
+const ACCENT = '#008060'
+const ACCENT_LIGHT = '#00C896'
 
 export default function ResetPasswordPage() {
   const { isDark, toggleTheme } = useTheme()
@@ -60,18 +63,18 @@ export default function ResetPasswordPage() {
     }
   }
 
-  const bg = isDark ? '#08090C' : '#f0f2f8'
+  const bg = isDark ? '#08090C' : '#f0f8f4'
   const surface = isDark ? '#111318' : '#ffffff'
-  const border = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(10,100,220,0.1)'
+  const border = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,128,96,0.1)'
   const textPrimary = isDark ? '#F5F5F7' : '#1a1a2e'
-  const textMuted = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(20,30,90,0.5)'
-  const labelColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(10,50,140,0.5)'
+  const textMuted = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(20,50,40,0.5)'
+  const labelColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(10,50,40,0.5)'
 
   // Still checking session
   if (checking) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg, fontFamily: "'DM Sans', sans-serif" }}>
-        <Loader2 size={24} color="#0A84FF" style={{ animation: 'spin 1s linear infinite' }} />
+        <Loader2 size={24} color={ACCENT} style={{ animation: 'spin 1s linear infinite' }} />
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     )
@@ -82,7 +85,9 @@ export default function ResetPasswordPage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg, fontFamily: "'DM Sans', sans-serif", padding: '24px' }}>
         <div style={{ textAlign: 'center', maxWidth: 400, width: '100%' }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>🔗</div>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,50,40,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <Link2 size={24} color={textMuted} />
+          </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, fontFamily: "'Playfair Display', serif", marginBottom: 12 }}>
             {t('Link expired', 'Kiungo kimeisha muda')}
           </h1>
@@ -91,7 +96,7 @@ export default function ResetPasswordPage() {
           </p>
           <button
             onClick={() => navigate('/forgot-password')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', borderRadius: 11, background: 'linear-gradient(135deg, #0A84FF, #0066CC)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', borderRadius: 11, background: `linear-gradient(135deg, ${ACCENT_LIGHT}, ${ACCENT})`, color: 'white', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
           >
             {t('Request new link', 'Omba kiungo kipya')} <ArrowRight size={15} />
           </button>
@@ -105,8 +110,8 @@ export default function ResetPasswordPage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg, fontFamily: "'DM Sans', sans-serif", padding: '24px' }}>
         <div style={{ textAlign: 'center', maxWidth: 400, width: '100%' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(48,209,88,0.12)', border: '1.5px solid rgba(48,209,88,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <Check size={28} color="#30D158" />
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,128,96,0.12)', border: '1.5px solid rgba(0,128,96,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <Check size={28} color={ACCENT} />
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, fontFamily: "'Playfair Display', serif", marginBottom: 12 }}>
             {t('Password updated!', 'Nywila imesasishwa!')}
@@ -126,14 +131,14 @@ export default function ResetPasswordPage() {
 
         {/* Top nav */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 36 }}>
-          <button onClick={toggleTheme} style={{ width: 32, height: 32, borderRadius: 8, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,100,220,0.15)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#555' : '#8090c0' }}>
+          <button onClick={toggleTheme} style={{ width: 32, height: 32, borderRadius: 8, border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,128,96,0.15)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#555' : '#6b9080' }}>
             {isDark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
         </div>
 
         {/* Header */}
         <div style={{ marginBottom: 28 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0A84FF', marginBottom: 10 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: ACCENT, marginBottom: 10 }}>
             {t('New password', 'Nywila mpya')}
           </p>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, fontFamily: "'Playfair Display', serif", letterSpacing: '-0.3px', marginBottom: 8 }}>
@@ -166,15 +171,15 @@ export default function ResetPasswordPage() {
               onBlur={() => setFocused(false)}
               style={{
                 width: '100%', padding: '12px 44px 12px 14px', borderRadius: 10, fontSize: 16,
-                border: `1.5px solid ${focused ? '#0A84FF' : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(10,100,220,0.15)'}`,
-                background: isDark ? (focused ? 'rgba(10,132,255,0.05)' : 'rgba(255,255,255,0.03)') : (focused ? 'rgba(10,100,220,0.04)' : 'rgba(10,100,220,0.02)'),
+                border: `1.5px solid ${focused ? ACCENT : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,128,96,0.15)'}`,
+                background: isDark ? (focused ? 'rgba(0,128,96,0.08)' : 'rgba(255,255,255,0.03)') : (focused ? 'rgba(0,128,96,0.05)' : 'rgba(0,128,96,0.02)'),
                 color: textPrimary, fontFamily: "'DM Sans', sans-serif", outline: 'none',
                 boxSizing: 'border-box' as const, transition: 'all 0.2s',
               }}
             />
             <button
               onClick={() => setShowPassword(!showPassword)}
-              style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#444' : '#8090c0', display: 'flex', padding: 0 }}
+              style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#444' : '#6b9080', display: 'flex', padding: 0 }}
             >
               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
@@ -185,7 +190,7 @@ export default function ResetPasswordPage() {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          style={{ width: '100%', padding: '14px', borderRadius: 11, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: loading ? 'rgba(10,132,255,0.4)' : 'linear-gradient(135deg, #0A84FF 0%, #0066CC 100%)', color: 'white', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : '0 4px 20px rgba(10,132,255,0.4)', transition: 'all 0.2s', marginTop: 4 }}
+          style={{ width: '100%', padding: '14px', borderRadius: 11, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: loading ? 'rgba(0,128,96,0.4)' : `linear-gradient(135deg, ${ACCENT_LIGHT} 0%, ${ACCENT} 100%)`, color: 'white', fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : '0 4px 20px rgba(0,128,96,0.4)', transition: 'all 0.2s', marginTop: 4 }}
         >
           {loading
             ? <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> {t('Updating...', 'Inasasisha...')}</>

@@ -7,15 +7,15 @@ export default function Footer() {
   return (
     <footer className="border-t border-light-border dark:border-dark-border bg-light-surface dark:bg-dark-surface">
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-10 mb-10">
 
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="sm:col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
               <img src="/favicon.svg" alt="OfliX" className="w-7 h-7 rounded-ios flex-shrink-0" />
               <span className="font-display font-semibold text-light-text dark:text-dark-text">OfliX</span>
             </div>
-            <p className="font-body text-sm text-light-muted dark:text-dark-muted leading-relaxed">
+            <p className="font-body text-sm text-light-muted dark:text-dark-muted leading-relaxed max-w-xs">
               {t(
                 'Helping Kenyan businesses get online — fast, simple, and affordable.',
                 'Kusaidia biashara za Kenya kuingia mtandaoni — haraka, rahisi, na bei nafuu.'
@@ -90,12 +90,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-light-border dark:border-dark-border pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="border-t border-light-border dark:border-dark-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <p className="font-body text-xs text-light-muted dark:text-dark-muted">
             © {new Date().getFullYear()} OfliX. {t('All rights reserved.', 'Haki zote zimehifadhiwa.')}
           </p>
           <p className="font-mono text-xs text-light-muted dark:text-dark-muted">
-            {t('Made in Kenya 🇰🇪', 'Imetengenezwa Kenya 🇰🇪')}
+            {t('Made in Kenya', 'Imetengenezwa Kenya')}
           </p>
         </div>
       </div>
