@@ -183,9 +183,7 @@ export default function BusinessPage({ slugOverride }: { slugOverride?: string }
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F5F7' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #0A84FF, #5E5CE6)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 20 }}>O</span>
-          </div>
+          <img src="/favicon.svg" alt="OfliX" style={{ width: 44, height: 44, margin: '0 auto 12px' }} />
           <p style={{ fontSize: 13, color: '#8E8E93', fontFamily: "'DM Sans', sans-serif" }}>Loading...</p>
         </div>
       </div>
