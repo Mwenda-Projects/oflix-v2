@@ -4,6 +4,8 @@ import {
   Moon, Sun, ExternalLink,
   Copy, CheckCheck, Sparkles, BarChart2,
   Settings, Share2, LogOut, Lock, PhoneCall,
+  ShoppingBag, UtensilsCrossed, Scissors, Stethoscope,
+  GraduationCap, Truck, HardHat, Wheat, Laptop, Store,
 } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
@@ -14,10 +16,14 @@ import { getMyBusiness, getLeadStats } from '@/lib/db'
 import type { Business } from '@/lib/db'
 import MobileNav from '@/components/layout/MobileNav'
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  retail: '🛍️', food: '🍽️', salon: '💇', clinic: '🏥',
-  school: '📚', transport: '🚌', construction: '🏗️',
-  agriculture: '🌾', tech: '💻', other: '✨',
+// Lucide icon matched per business category — replaces the old emoji map.
+// Emoji render inconsistently across OS/browser and read as a template
+// tell; these icons pair with the icon-badge styling introduced on the
+// landing page, so the whole product now shares one icon system.
+const CATEGORY_ICON: Record<string, typeof Store> = {
+  retail: ShoppingBag, food: UtensilsCrossed, salon: Scissors, clinic: Stethoscope,
+  school: GraduationCap, transport: Truck, construction: HardHat,
+  agriculture: Wheat, tech: Laptop, other: Sparkles,
 }
 
 export default function DashboardPage() {
@@ -63,7 +69,7 @@ export default function DashboardPage() {
   // dashboard itself happens to be hosted, so this is built directly
   // from the slug rather than window.location.origin.
   const websiteUrl = business ? `https://${business.slug}.oflix.space` : null
-  const emoji = business ? (CATEGORY_EMOJI[business.category] || '✨') : '🏪'
+  const EmojiIcon = business ? (CATEGORY_ICON[business.category] || Sparkles) : Store
 
   const sidebarBg = '#1A1A1A'
   const mainBg = isDark ? '#0F1011' : '#F6F6F7'
@@ -119,9 +125,7 @@ export default function DashboardPage() {
 
         <div style={{ padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ fontFamily: 'serif', fontWeight: 900, color: 'white', fontSize: 14 }}>O</span>
-            </div>
+            <img src="/favicon.svg" alt="OfliX" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
             <span style={{ fontSize: 16, fontWeight: 700, color: 'white', letterSpacing: '-0.3px' }}>OfliX</span>
           </Link>
         </div>
@@ -129,8 +133,8 @@ export default function DashboardPage() {
         {business && (
           <div style={{ padding: '10px 10px 4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 11px', background: 'rgba(255,255,255,0.06)', borderRadius: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 7, background: `linear-gradient(135deg, ${accent}, #004C3F)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-                {emoji}
+              <div style={{ width: 30, height: 30, borderRadius: 7, background: `linear-gradient(135deg, ${accent}, #004C3F)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <EmojiIcon size={15} color="white" />
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -178,7 +182,7 @@ export default function DashboardPage() {
 
         <div style={{ padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <button onClick={toggleLanguage} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}>
-            🌐 {language === 'en' ? 'Kiswahili' : 'English'}
+            <Globe size={12} /> {language === 'en' ? 'Kiswahili' : 'English'}
           </button>
           <button onClick={toggleTheme} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 8px', borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 1, fontFamily: "'DM Sans', sans-serif" }}>
             {isDark ? <Sun size={12} /> : <Moon size={12} />}
@@ -220,7 +224,7 @@ export default function DashboardPage() {
 
           <div style={{ marginBottom: 24 }}>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: textPrimary, letterSpacing: '-0.3px', marginBottom: 4 }}>
-              {t(`Good day, ${firstName} 👋`, `Habari, ${firstName} 👋`)}
+              {t(`Good day, ${firstName}`, `Habari, ${firstName}`)}
             </h1>
             <p style={{ fontSize: 14, color: textMuted }}>
               {business
@@ -261,7 +265,9 @@ export default function DashboardPage() {
 
           ) : !business ? (
             <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: '48px 32px', textAlign: 'center' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🏪</div>
+              <div style={{ width: 64, height: 64, borderRadius: 16, background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <Store size={28} color={accent} />
+              </div>
               <h2 style={{ fontSize: 20, fontWeight: 700, color: textPrimary, marginBottom: 8 }}>
                 {t("You don't have a website yet", 'Bado huna tovuti')}
               </h2>
@@ -331,7 +337,7 @@ export default function DashboardPage() {
                   </div>
                   <div style={{ background: isDark ? '#0D0D12' : '#F6F6F7', border: `1px solid ${border}`, borderRadius: 8, height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14, overflow: 'hidden' }}>
                     <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, #004C3F, ${accent})`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <div style={{ fontSize: 24 }}>{emoji}</div>
+                      <EmojiIcon size={24} color="white" />
                       <div style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{business.name}</div>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>{business.address}</div>
                     </div>
