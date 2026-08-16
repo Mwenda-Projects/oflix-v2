@@ -33,6 +33,35 @@ const CATEGORY_PHOTOS: Record<string, { hero: string; alt: string }> = {
   other:        { hero: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80', alt: 'Professional business' },
 }
 
+// Display-font pairing per category. Body copy always stays on Inter for
+// readability — only the display face (headlines) changes, so each
+// category cluster reads with its own personality instead of every
+// business sharing one typeface with a different accent color.
+const CATEGORY_FONTS: Record<string, { display: string }> = {
+  food:         { display: "'Fraunces', serif" },
+  salon:        { display: "'Fraunces', serif" },
+  clinic:       { display: "'Space Grotesk', sans-serif" },
+  retail:       { display: "'Space Grotesk', sans-serif" },
+  school:       { display: "'Space Grotesk', sans-serif" },
+  transport:    { display: "'Barlow Condensed', sans-serif" },
+  construction: { display: "'Barlow Condensed', sans-serif" },
+  agriculture:  { display: "'Barlow Condensed', sans-serif" },
+  tech:         { display: "'Space Grotesk', sans-serif" },
+  other:        { display: "'Barlow Condensed', sans-serif" },
+}
+
+// Small inline SVG icon set replacing emoji glyphs. Emoji render
+// inconsistently across OS/browser and read as a template tell — these
+// use stroke="currentColor" so they automatically match whatever text
+// color they're dropped into, with no extra styling needed per use.
+const ICON = {
+  phone: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+  chat: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`,
+  pin: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  clock: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  save: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`,
+}
+
 interface UnsplashPhoto {
   hero: string
   alt: string
@@ -105,6 +134,7 @@ export async function generateWebsite(business: {
   }
 
   const c = categoryColors[business.category] || categoryColors.other
+  const f = CATEGORY_FONTS[business.category] || CATEGORY_FONTS.other
   const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
   const whatsappLink = `https://wa.me/${whatsappNumber}`
 
@@ -124,6 +154,14 @@ export async function generateWebsite(business: {
   // logic as before — just a different domain shape.
   const businessSlug = business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
   const websiteUrl = `https://${businessSlug}.oflix.space`
+
+  // Nav logo split: last word gets the accent color, everything before it
+  // stays plain. Handles any word count safely — previously this sliced
+  // to the first two words and dropped the rest for longer names, and
+  // produced an empty accent span for single-word names.
+  const nameWords = business.name.trim().split(/\s+/)
+  const navLogoMain = nameWords.length > 1 ? nameWords.slice(0, -1).join(' ') : nameWords[0]
+  const navLogoAccent = nameWords.length > 1 ? nameWords[nameWords.length - 1] : ''
 
   // Step 1: Ask Claude for JSON content + an image search keyword
   const contentPrompt = `You are a copywriter for a Nairobi business website. Return ONLY valid JSON, no markdown, no explanation.
@@ -195,7 +233,7 @@ Return this exact JSON structure:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${business.name}</title>
 <meta name="description" content="${content.hero_subtitle}">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Barlow+Condensed:wght@700;800;900&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -203,15 +241,15 @@ body{font-family:'Inter',sans-serif;background:${c.bg};color:${c.text};overflow-
 a{text-decoration:none;color:inherit}
 img{display:block;max-width:100%}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);border-bottom:2px solid ${c.accent}}
-.logo{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:1px;color:${c.text}}
+.logo{font-family:${f.display};font-size:1.3rem;font-weight:800;letter-spacing:1px;color:${c.text}}
 .logo span{color:${c.accent}}
-.nav-btn{background:${c.accent};color:${c.bg};font-weight:700;font-size:0.8rem;padding:8px 16px;border-radius:4px;letter-spacing:0.5px}
+.nav-btn{background:${c.accent};color:${c.bg};font-weight:700;font-size:0.8rem;padding:8px 16px;border-radius:4px;letter-spacing:0.5px;display:inline-flex;align-items:center;gap:6px}
 .hero{min-height:100vh;display:flex;align-items:flex-end;padding-bottom:60px;position:relative;overflow:hidden}
 .hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,${c.bg} 0%,rgba(0,0,0,0.55) 60%,rgba(0,0,0,0.2) 100%);z-index:1}
 .hero-body{position:relative;z-index:2;padding:0 24px;max-width:700px;width:100%;margin:0 auto}
-.hero-tag{display:inline-block;background:${c.accent};color:${c.bg};font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:5px 12px;border-radius:2px;margin-bottom:16px}
-.hero-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:#ffffff}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:${c.accent};color:${c.bg};font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:5px 12px;border-radius:2px;margin-bottom:16px}
+.hero-title{font-family:${f.display};font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:#ffffff}
 .hero-title span{color:${c.accent};display:block}
 .hero-sub{font-size:1rem;color:rgba(255,255,255,0.8);max-width:480px;margin-bottom:28px;line-height:1.7}
 .hero-btns{display:flex;flex-wrap:wrap;gap:12px}
@@ -220,7 +258,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;ali
 .btn-directions{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.4);display:inline-flex;align-items:center;gap:8px}
 .btn-wa:hover,.btn-call:hover,.btn-directions:hover{opacity:0.88}
 .hero-stats{display:flex;gap:28px;margin-top:40px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.2)}
-.stat-num{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:${c.accent};line-height:1}
+.stat-num{font-family:${f.display};font-size:2rem;font-weight:900;color:${c.accent};line-height:1}
 .stat-lbl{font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 .services{padding:70px 24px;background:rgba(255,255,255,0.03)}
 .about-sec{padding:70px 24px}
@@ -228,7 +266,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;ali
 footer{padding:24px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);font-size:0.8rem;color:${c.muted}}
 footer a{color:${c.accent}}
 .sec-label{font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${c.accent};margin-bottom:10px}
-.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2rem,7vw,2.8rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:32px;line-height:1}
+.sec-title{font-family:${f.display};font-size:clamp(2rem,7vw,2.8rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:32px;line-height:1}
 .sec-title span{color:${c.accent}}
 .section-inner{max-width:1100px;width:100%;margin:0 auto}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
@@ -237,20 +275,20 @@ footer a{color:${c.accent}}
 @media(min-width:1024px){.hero-body{max-width:900px}.about-inner{max-width:800px}}
 .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:20px;transition:border-color 0.2s}
 .card:hover{border-color:${c.accent}}
-.card-num{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;color:${c.accent};opacity:0.4;line-height:1;margin-bottom:8px}
+.card-mark{width:28px;height:3px;background:${c.accent};border-radius:2px;margin-bottom:14px}
 .card-name{font-weight:700;font-size:1rem;color:${c.text};margin-bottom:6px}
 .card-desc{font-size:0.85rem;color:${c.muted};line-height:1.6}
 .about-inner{max-width:700px;width:100%;margin:0 auto}
 .about-text{font-size:0.95rem;color:${c.muted};line-height:1.9;margin-bottom:24px}
 .detail-row{display:flex;align-items:flex-start;gap:12px;font-size:0.9rem;color:${c.muted};margin-bottom:12px}
-.detail-icon{width:36px;height:36px;background:${c.accent};border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem}
+.detail-icon{width:36px;height:36px;background:${c.accent};border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${c.bg}}
 .detail-row strong{display:block;color:${c.text};font-size:0.8rem;margin-bottom:2px}
 .contact-btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
 .btn-contact{display:inline-flex;align-items:center;gap:8px;padding:13px 20px;border-radius:4px;font-weight:700;font-size:0.9rem;cursor:pointer;border:none}
 .btn-save{background:${c.accent};color:${c.bg}}
 .btn-map{background:rgba(255,255,255,0.08);color:${c.text};border:1.5px solid rgba(255,255,255,0.2)!important}
 .cta-inner{max-width:700px;width:100%;margin:0 auto}
-.cta-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(1.8rem,6vw,2.5rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:8px}
+.cta-title{font-family:${f.display};font-size:clamp(1.8rem,6vw,2.5rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:8px}
 .cta-sub{color:${c.muted};font-size:0.9rem;margin-bottom:28px}
 .cta-btns{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
 </style>
@@ -258,24 +296,24 @@ footer a{color:${c.accent}}
 <body>
 
 <nav>
-  <a href="#" class="logo">${business.name.split(' ').slice(0,2).join(' ')} <span>${business.name.split(' ').slice(2).join(' ')}</span></a>
-  <a href="tel:${business.phone}" class="nav-btn">📞 Call Now</a>
+  <a href="#" class="logo">${navLogoMain}${navLogoAccent ? ` <span>${navLogoAccent}</span>` : ''}</a>
+  <a href="tel:${business.phone}" class="nav-btn">${ICON.phone} Call Now</a>
 </nav>
 
 <section class="hero">
   <img class="hero-img" src="${photo.hero}" alt="${photo.alt}" data-img-slot="hero">
   <div class="hero-overlay"></div>
   <div class="hero-body">
-    <div class="hero-tag">📍 ${displayAddress}</div>
+    <div class="hero-tag">${ICON.pin} ${displayAddress}</div>
     <h1 class="hero-title">
       ${content.hero_title.split(' ').slice(0, 3).join(' ')}
       <span>${content.hero_title.split(' ').slice(3).join(' ')}</span>
     </h1>
     <p class="hero-sub">${content.hero_subtitle}</p>
     <div class="hero-btns">
-      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">💬 WhatsApp Us</a>
-      <a href="tel:${business.phone}" class="btn-call">📞 ${business.phone}</a>
-      <a href="${mapsLink}" target="_blank" class="btn-directions" onclick="trackDir()">🗺️ Get Directions</a>
+      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">${ICON.chat} WhatsApp Us</a>
+      <a href="tel:${business.phone}" class="btn-call">${ICON.phone} ${business.phone}</a>
+      <a href="${mapsLink}" target="_blank" class="btn-directions" onclick="trackDir()">${ICON.pin} Get Directions</a>
     </div>
     <div class="hero-stats">
       <div><div class="stat-num">5★</div><div class="stat-lbl">Rating</div></div>
@@ -291,22 +329,22 @@ footer a{color:${c.accent}}
     <h2 class="sec-title">Our <span>Services</span></h2>
     <div class="grid">
       <div class="card">
-        <div class="card-num">01</div>
+        <div class="card-mark"></div>
         <div class="card-name">${content.service1_name}</div>
         <div class="card-desc">${content.service1_desc}</div>
       </div>
       <div class="card">
-        <div class="card-num">02</div>
+        <div class="card-mark"></div>
         <div class="card-name">${content.service2_name}</div>
         <div class="card-desc">${content.service2_desc}</div>
       </div>
       <div class="card">
-        <div class="card-num">03</div>
+        <div class="card-mark"></div>
         <div class="card-name">${content.service3_name}</div>
         <div class="card-desc">${content.service3_desc}</div>
       </div>
       <div class="card">
-        <div class="card-num">04</div>
+        <div class="card-mark"></div>
         <div class="card-name">${content.service4_name}</div>
         <div class="card-desc">${content.service4_desc}</div>
       </div>
@@ -320,21 +358,21 @@ footer a{color:${c.accent}}
     <h2 class="sec-title">Who <span>We Are</span></h2>
     <p class="about-text">${content.about}</p>
     <div class="detail-row">
-      <div class="detail-icon">📍</div>
+      <div class="detail-icon">${ICON.pin}</div>
       <div><strong>Location</strong>${displayAddress}${business.floorUnit ? `<br><span style="opacity:0.75;font-size:0.85em">${business.floorUnit}</span>` : ''}</div>
     </div>
     <div class="detail-row">
-      <div class="detail-icon">📞</div>
+      <div class="detail-icon">${ICON.phone}</div>
       <div><strong>Phone</strong><a href="tel:${business.phone}" style="color:inherit">${business.phone}</a></div>
     </div>
-    ${business.hours ? `<div class="detail-row"><div class="detail-icon">🕐</div><div><strong>Hours</strong>${business.hours}</div></div>` : ''}
+    ${business.hours ? `<div class="detail-row"><div class="detail-icon">${ICON.clock}</div><div><strong>Hours</strong>${business.hours}</div></div>` : ''}
     <div class="detail-row">
-      <div class="detail-icon">💬</div>
+      <div class="detail-icon">${ICON.chat}</div>
       <div><strong>WhatsApp</strong><a href="${whatsappLink}" target="_blank" onclick="trackWA()" style="color:inherit">Chat with us</a></div>
     </div>
     <div class="contact-btns">
-      <button class="btn-contact btn-save" onclick="saveContact()">📱 Save Contact</button>
-      <a href="${mapsLink}" target="_blank" class="btn-contact btn-map" onclick="trackDir()">🗺️ Get Directions</a>
+      <button class="btn-contact btn-save" onclick="saveContact()">${ICON.save} Save Contact</button>
+      <a href="${mapsLink}" target="_blank" class="btn-contact btn-map" onclick="trackDir()">${ICON.pin} Get Directions</a>
     </div>
   </div>
 </section>
@@ -344,8 +382,8 @@ footer a{color:${c.accent}}
     <h2 class="cta-title">Ready to <span style="color:${c.accent}">Get Started?</span></h2>
     <p class="cta-sub">${content.tagline}</p>
     <div class="cta-btns">
-      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">💬 ${content.cta_text}</a>
-      <a href="tel:${business.phone}" class="btn-call">📞 Call ${business.phone}</a>
+      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">${ICON.chat} ${content.cta_text}</a>
+      <a href="tel:${business.phone}" class="btn-call">${ICON.phone} Call ${business.phone}</a>
     </div>
   </div>
 </section>
@@ -360,7 +398,6 @@ var BUSINESS_ID = "${business.id}";
 var TRACK_URL = "https://oflix.space/api/track";
 
 function track(action) {
-  try { window.parent.postMessage({ type: 'oflix_track', event: action }, '*'); } catch(e) {}
   try {
     fetch(TRACK_URL, {
       method: 'POST',
