@@ -8,7 +8,7 @@ import { isValidGeneratedHtml } from '@/lib/ai'
 import { supabase } from '@/lib/supabase'
 import { compressAndUpload, deleteIfOwnedImage, findImageSlots, replaceImageSlot, type ImageSlot } from '@/lib/imageUpload'
 import type { Business } from '@/lib/db'
-import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp, ImagePlus, Upload } from 'lucide-react'
+import { Smartphone, Monitor, Tablet, Send, Sparkles, ExternalLink, Copy, CheckCheck, RefreshCw, Lock, ChevronDown, ChevronUp, ImagePlus, Upload, Globe, Check } from 'lucide-react'
 
 type Device = 'mobile' | 'tablet' | 'desktop'
 
@@ -295,7 +295,9 @@ STRICT RULES:
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, textAlign: 'center', gap: 12 }}>
-                <div style={{ fontSize: 48 }}>🌐</div>
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Globe size={26} color={accent} />
+                </div>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: textPrimary }}>{t('No website yet', 'Bado huna tovuti')}</h3>
                 <p style={{ fontSize: 13, color: textMuted }}>{t('Complete onboarding to generate your website.', 'Kamilisha mchakato wa kuanza.')}</p>
               </div>
@@ -424,8 +426,8 @@ STRICT RULES:
             ) : (
               <div style={{ padding: 12 }}>
                 {message && (
-                  <div style={{ marginBottom: 10, padding: '8px 12px', borderRadius: 7, background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, fontSize: 12, color: accent, fontWeight: 500 }}>
-                    ✓ {message}
+                  <div style={{ marginBottom: 10, padding: '8px 12px', borderRadius: 7, background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, fontSize: 12, color: accent, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Check size={13} style={{ flexShrink: 0 }} /> {message}
                   </div>
                 )}
 
