@@ -81,8 +81,8 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="mailto:hello@oflix.co.ke" className="font-body text-sm text-light-muted dark:text-dark-muted hover:text-brand transition-colors">
-                  hello@oflix.co.ke
+                <a href="mailto:hello@oflix.space" className="font-body text-sm text-light-muted dark:text-dark-muted hover:text-brand transition-colors">
+                  hello@oflix.space
                 </a>
               </li>
             </ul>

@@ -548,7 +548,7 @@ export default function LandingPage() {
             {t('Terms of Service', 'Masharti ya Huduma')}
           </Link>
           <span style={{ fontSize: 12, color: border }}>·</span>
-          <a href="mailto:mwendantony28@gmail.com" style={{ fontSize: 12, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
+          <a href="mailto:hello@oflix.space" style={{ fontSize: 12, color: textMuted, textDecoration: 'none', fontWeight: 500 }}>
             {t('Contact', 'Wasiliana')}
           </a>
         </div>
