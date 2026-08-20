@@ -84,7 +84,7 @@ export default function TermsPage() {
             },
             {
               title: '12. Governing Law',
-              body: 'These terms are governed by the laws of Kenya. Any disputes shall be resolved under Kenyan jurisdiction. For any questions about these terms, contact us at mwendantony28@gmail.com.'
+              body: 'These terms are governed by the laws of Kenya. Any disputes shall be resolved under Kenyan jurisdiction. For any questions about these terms, contact us at hello@oflix.space.'
             },
           ].map((section, i) => (
             <div key={i}>

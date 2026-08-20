@@ -123,7 +123,7 @@ export default function SettingsPage() {
       navigate('/')
     } catch (err: any) {
       console.error(err)
-      setError('Failed to delete account. Please contact mwendantony28@gmail.com.')
+      setError('Failed to delete account. Please contact hello@oflix.space.')
       setDeletingAccount(false)
     }
   }

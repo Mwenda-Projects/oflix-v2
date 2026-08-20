@@ -40,7 +40,7 @@ export default function PrivacyPage() {
           {[
             {
               title: '1. Who We Are',
-              body: 'OfliX is a SaaS platform operated by OfliX, based in Nairobi, Kenya. We help Kenyan businesses create AI-generated websites and manage their online presence. For any privacy-related concerns, contact us at mwendantony28@gmail.com.'
+              body: 'OfliX is a SaaS platform operated by OfliX, based in Nairobi, Kenya. We help Kenyan businesses create AI-generated websites and manage their online presence. For any privacy-related concerns, contact us at hello@oflix.space.'
             },
             {
               title: '2. Information We Collect',
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
             },
             {
               title: '8. Your Rights',
-              body: 'You have the right to access the personal data we hold about you, request correction of inaccurate data, request deletion of your account and associated data, and opt out of non-essential communications. To exercise these rights, email us at mwendantony28@gmail.com.'
+              body: 'You have the right to access the personal data we hold about you, request correction of inaccurate data, request deletion of your account and associated data, and opt out of non-essential communications. To exercise these rights, email us at hello@oflix.space.'
             },
             {
               title: '9. Cookies',
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
             },
             {
               title: '11. Contact Us',
-              body: 'If you have any questions about this Privacy Policy, please contact us at mwendantony28@gmail.com. We aim to respond within 3 business days.'
+              body: 'If you have any questions about this Privacy Policy, please contact us at hello@oflix.space. We aim to respond within 3 business days.'
             },
           ].map((section, i) => (
             <div key={i}>
