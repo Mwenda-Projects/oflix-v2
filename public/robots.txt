@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /reset-password
+Disallow: /forgot-password
+
+Sitemap: https://oflix.space/sitemap.xml
