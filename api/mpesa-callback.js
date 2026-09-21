@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import PDFDocument from 'pdfkit'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -11,11 +12,105 @@ const DURATION_DAYS = { monthly: 30, annual: 365 }
 const EXPECTED_AMOUNT = { monthly: 299, annual: 2499 }
 const PLAN_LABEL = { monthly: 'Pro Monthly', annual: 'Pro Annual' }
 
+const LOGO_URL = 'https://oflix.space/web-app-manifest-512x512.png'
+const DASHBOARD_URL = 'https://oflix.space/dashboard'
+const BRAND_GREEN = '#008060'
+
+// Builds the receipt PDF and returns it as a Buffer, or null on any
+// failure. Kept separate from sendReceiptEmail's own try/catch so a
+// PDF problem degrades to "email without attachment" instead of no
+// email at all.
+async function generateReceiptPdf({ mpesaReceiptNumber, planLabel, amount, phoneNumber, expiresAt, purchasedAt }) {
+  try {
+    let logoBuffer = null
+    try {
+      const logoRes = await fetch(LOGO_URL)
+      if (logoRes.ok) {
+        logoBuffer = Buffer.from(await logoRes.arrayBuffer())
+      }
+    } catch (logoError) {
+      console.warn('Receipt PDF: could not fetch logo, continuing without it:', logoError.message)
+    }
+
+    const doc = new PDFDocument({ size: 'A4', margin: 0 })
+    const chunks = []
+    doc.on('data', chunk => chunks.push(chunk))
+    const done = new Promise((resolve, reject) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', reject)
+    })
+
+    const pageWidth = doc.page.width
+    const margin = 50
+
+    // Header band
+    doc.rect(0, 0, pageWidth, 110).fill(BRAND_GREEN)
+    if (logoBuffer) {
+      doc.image(logoBuffer, margin, 30, { width: 48, height: 48 })
+    }
+    doc.fillColor('#ffffff').fontSize(20).font('Helvetica-Bold')
+      .text('OfliX', logoBuffer ? margin + 60 : margin, 44)
+    doc.fillColor('#ffffff').fontSize(10).font('Helvetica')
+      .text('hello@oflix.space  ·  oflix.space', logoBuffer ? margin + 60 : margin, 68)
+
+    // Title
+    doc.fillColor('#1a1a1a').fontSize(18).font('Helvetica-Bold')
+      .text('Payment Receipt', margin, 145)
+    doc.fillColor('#666666').fontSize(10).font('Helvetica')
+      .text('Official receipt for your records', margin, 168)
+
+    // Details table
+    const rows = [
+      ['Receipt No.', mpesaReceiptNumber || 'N/A'],
+      ['Date', purchasedAt],
+      ['Plan', planLabel],
+      ['Amount Paid', `KES ${amount}`],
+      ['Payment Method', `M-Pesa (${phoneNumber || 'N/A'})`],
+      ['Renews / Expires', expiresAt],
+    ]
+
+    let y = 210
+    const rowHeight = 32
+    const labelX = margin
+    const valueX = margin + 180
+    const tableWidth = pageWidth - margin * 2
+
+    doc.rect(margin, y, tableWidth, rowHeight * rows.length).strokeColor('#e5e5e5').lineWidth(1).stroke()
+
+    rows.forEach(([label, value], i) => {
+      const rowY = y + i * rowHeight
+      if (i > 0) {
+        doc.moveTo(margin, rowY).lineTo(margin + tableWidth, rowY).strokeColor('#eeeeee').stroke()
+      }
+      doc.fillColor('#888888').fontSize(10).font('Helvetica')
+        .text(label, labelX + 14, rowY + 11)
+      doc.fillColor('#1a1a1a').fontSize(10).font('Helvetica-Bold')
+        .text(String(value), valueX, rowY + 11, { width: tableWidth - 180 - 14 })
+    })
+
+    y = y + rowHeight * rows.length + 40
+
+    doc.fillColor('#1a1a1a').fontSize(11).font('Helvetica-Bold')
+      .text('Thank you for choosing OfliX.', margin, y)
+    doc.fillColor('#888888').fontSize(9).font('Helvetica')
+      .text('Questions about this payment? Reply to your receipt email or contact hello@oflix.space.', margin, y + 18, { width: tableWidth })
+
+    doc.fillColor('#bbbbbb').fontSize(8)
+      .text('OfliX · Nairobi, Kenya · oflix.space', margin, doc.page.height - 50)
+
+    doc.end()
+    return await done
+  } catch (pdfError) {
+    console.error('Receipt PDF generation failed, email will send without attachment:', pdfError)
+    return null
+  }
+}
+
 // Sends the payment receipt. Failures here are logged but never thrown —
 // the M-Pesa payment has already succeeded and the subscription already
 // upgraded by the time this runs, so an email/Resend hiccup must not
 // affect the response Safaricom gets or trigger a callback retry.
-async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNumber, expiresAt }) {
+async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNumber, expiresAt, phoneNumber }) {
   if (!toEmail) {
     console.warn('Skipping receipt email — no email on file for this user')
     return
@@ -23,6 +118,15 @@ async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNum
 
   const formattedExpiry = expiresAt.toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })
   const planLabel = PLAN_LABEL[billingCycle] || 'Pro'
+
+  const pdfBuffer = await generateReceiptPdf({
+    mpesaReceiptNumber,
+    planLabel,
+    amount,
+    phoneNumber,
+    expiresAt: formattedExpiry,
+    purchasedAt: new Date().toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' }),
+  })
 
   try {
     await resend.emails.send({
@@ -33,34 +137,42 @@ async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNum
       // should land in the real inbox a human actually checks.
       replyTo: 'hello@oflix.space',
       subject: `Payment received — ${planLabel} is now active`,
+      ...(pdfBuffer ? {
+        attachments: [{
+          filename: `OfliX-Receipt-${mpesaReceiptNumber || 'payment'}.pdf`,
+          content: pdfBuffer.toString('base64'),
+        }],
+      } : {}),
       html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-          <div style="width: 40px; height: 40px; border-radius: 10px; background: #008060; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-            <span style="font-family: serif; font-weight: 900; color: white; font-size: 20px; line-height: 40px;">O</span>
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff;">
+          <div style="height: 4px; background: ${BRAND_GREEN};"></div>
+          <div style="padding: 24px;">
+            <img src="${LOGO_URL}" alt="OfliX" width="40" height="40" style="display: block; margin-bottom: 20px; border-radius: 10px;" />
+            <h1 style="color: #1a1a1a; font-size: 22px; margin-bottom: 8px;">Payment received</h1>
+            <p style="color: #555; line-height: 1.6;">Your OfliX ${planLabel} subscription is now active.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px;">
+              <tr>
+                <td style="padding: 8px 0; color: #888;">Plan</td>
+                <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right;">${planLabel}</td>
+              </tr>
+              <tr style="border-top: 1px solid #eee;">
+                <td style="padding: 8px 0; color: #888;">Amount</td>
+                <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right;">KES ${amount}</td>
+              </tr>
+              <tr style="border-top: 1px solid #eee;">
+                <td style="padding: 8px 0; color: #888;">M-Pesa receipt</td>
+                <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right; font-family: 'Courier New', monospace;">${mpesaReceiptNumber || 'N/A'}</td>
+              </tr>
+              <tr style="border-top: 1px solid #eee;">
+                <td style="padding: 8px 0; color: #888;">Renews / expires</td>
+                <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right;">${formattedExpiry}</td>
+              </tr>
+            </table>
+            <a href="${DASHBOARD_URL}" style="display: inline-block; background: ${BRAND_GREEN}; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 8px; margin-bottom: 24px;">Go to dashboard</a>
+            <p style="color: #888; font-size: 13px; line-height: 1.6;">Questions about this payment? Just reply to this email — it reaches us directly at hello@oflix.space.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+            <p style="color: #999; font-size: 12px;">OfliX · hello@oflix.space</p>
           </div>
-          <h1 style="color: #1a1a1a; font-size: 22px; margin-bottom: 8px;">Payment received</h1>
-          <p style="color: #555; line-height: 1.6;">Your OfliX ${planLabel} subscription is now active.</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px;">
-            <tr>
-              <td style="padding: 8px 0; color: #888;">Plan</td>
-              <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right;">${planLabel}</td>
-            </tr>
-            <tr style="border-top: 1px solid #eee;">
-              <td style="padding: 8px 0; color: #888;">Amount</td>
-              <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right;">KES ${amount}</td>
-            </tr>
-            <tr style="border-top: 1px solid #eee;">
-              <td style="padding: 8px 0; color: #888;">M-Pesa receipt</td>
-              <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right;">${mpesaReceiptNumber || 'N/A'}</td>
-            </tr>
-            <tr style="border-top: 1px solid #eee;">
-              <td style="padding: 8px 0; color: #888;">Renews / expires</td>
-              <td style="padding: 8px 0; color: #1a1a1a; font-weight: 600; text-align: right;">${formattedExpiry}</td>
-            </tr>
-          </table>
-          <p style="color: #888; font-size: 13px; line-height: 1.6;">Questions about this payment? Just reply to this email — it reaches us directly at hello@oflix.space.</p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-          <p style="color: #999; font-size: 12px;">OfliX · hello@oflix.space</p>
         </div>
       `,
     })
@@ -222,6 +334,7 @@ export default async function handler(req, res) {
       amount,
       mpesaReceiptNumber,
       expiresAt,
+      phoneNumber,
     })
 
     return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' })
