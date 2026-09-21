@@ -8,7 +8,7 @@ import { getMyBusiness, updateBusiness, signOut } from '@/lib/db'
 import { generateWebsite as generateWebsiteFromAI, isValidGeneratedHtml } from '@/lib/ai'
 import { supabase } from '@/lib/supabase'
 import type { Business } from '@/lib/db'
-import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Building2, Mail, Lock, Trash2, LogOut } from 'lucide-react'
+import { Moon, Sun, Sparkles, Globe, Phone, Clock, MapPin, Building2, Mail, Lock, Trash2, LogOut, Check, AlertTriangle } from 'lucide-react'
 
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
@@ -218,13 +218,15 @@ export default function SettingsPage() {
         </div>
 
         {saved && (
-          <div style={{ background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: accent, fontWeight: 500 }}>
-            ✓ {t('Changes saved successfully.', 'Mabadiliko yamehifadhiwa.')}
+          <div style={{ background: isDark ? 'rgba(0,128,96,0.1)' : '#F1F8F5', border: `1px solid ${isDark ? 'rgba(0,128,96,0.2)' : '#B3D9CC'}`, borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: accent, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Check size={13} style={{ flexShrink: 0 }} />
+            {t('Changes saved successfully.', 'Mabadiliko yamehifadhiwa.')}
           </div>
         )}
         {error && (
-          <div style={{ background: isDark ? 'rgba(255,69,58,0.08)' : '#FDECEA', border: `1px solid ${isDark ? 'rgba(255,69,58,0.15)' : '#F5C6CB'}`, borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#B32525', fontWeight: 500 }}>
-            ⚠ {error}
+          <div style={{ background: isDark ? 'rgba(255,69,58,0.08)' : '#FDECEA', border: `1px solid ${isDark ? 'rgba(255,69,58,0.15)' : '#F5C6CB'}`, borderRadius: 8, padding: '10px 16px', marginBottom: 16, fontSize: 13, color: '#B32525', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+            {error}
           </div>
         )}
 
@@ -258,7 +260,15 @@ export default function SettingsPage() {
 
         {!loading && business && (
           <Section title={t('Your website', 'Tovuti yako')} subtitle={t('Manage your public business page', 'Simamia ukurasa wako wa umma wa biashara')}>
-            <Row icon={Globe} label={t('Website status', 'Hali ya tovuti')} value={`oflix.co.ke/b/${business.slug}`} action={() => window.open(`/b/${business.slug}`, '_blank')} actionLabel={t('View', 'Angalia')} actionStyle="outline" />
+            {/* Fixed: was showing oflix.co.ke/b/:slug — now uses the correct subdomain URL */}
+            <Row
+              icon={Globe}
+              label={t('Website status', 'Hali ya tovuti')}
+              value={`${business.slug}.oflix.space`}
+              action={() => window.open(`https://${business.slug}.oflix.space`, '_blank')}
+              actionLabel={t('View', 'Angalia')}
+              actionStyle="outline"
+            />
 
             {/* Regenerate */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${rowBorder}`, gap: 12 }}>
