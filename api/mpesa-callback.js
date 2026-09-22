@@ -3,10 +3,6 @@
 // Adapted from The Mwenda Chronicles callback implementation
 
 import { createClient } from '@supabase/supabase-js'
-import { Resend } from 'resend'
-import PDFDocument from 'pdfkit'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 const DURATION_DAYS = { monthly: 30, annual: 365 }
 const EXPECTED_AMOUNT = { monthly: 299, annual: 2499 }
@@ -19,9 +15,15 @@ const BRAND_GREEN = '#008060'
 // Builds the receipt PDF and returns it as a Buffer, or null on any
 // failure. Kept separate from sendReceiptEmail's own try/catch so a
 // PDF problem degrades to "email without attachment" instead of no
-// email at all.
+// email at all. pdfkit is imported dynamically, inside this function,
+// not at the top of the file — a broken or missing dependency here
+// must only cost the receipt, never crash the callback before the
+// subscription upgrade below even runs (the exact bug that stalled
+// every payment before 'resend' was installed).
 async function generateReceiptPdf({ mpesaReceiptNumber, planLabel, amount, phoneNumber, expiresAt, purchasedAt }) {
   try {
+    const { default: PDFDocument } = await import('pdfkit')
+
     let logoBuffer = null
     try {
       const logoRes = await fetch(LOGO_URL)
@@ -110,6 +112,9 @@ async function generateReceiptPdf({ mpesaReceiptNumber, planLabel, amount, phone
 // the M-Pesa payment has already succeeded and the subscription already
 // upgraded by the time this runs, so an email/Resend hiccup must not
 // affect the response Safaricom gets or trigger a callback retry.
+// Resend is imported dynamically inside this function for the same
+// reason as pdfkit above: a broken dependency here must only cost the
+// receipt email, never take down the callback before the upgrade runs.
 async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNumber, expiresAt, phoneNumber }) {
   if (!toEmail) {
     console.warn('Skipping receipt email — no email on file for this user')
@@ -134,6 +139,9 @@ async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNum
   })
 
   try {
+    const { Resend } = await import('resend')
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
     await resend.emails.send({
       from: 'OfliX <receipts@mail.oflix.space>',
       to: [toEmail],

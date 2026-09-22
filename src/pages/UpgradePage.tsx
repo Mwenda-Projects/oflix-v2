@@ -4,7 +4,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { Check, Sparkles, ArrowLeft, Phone } from 'lucide-react'
+import { Check, Sparkles, ArrowLeft, Phone, Lock, AlertTriangle } from 'lucide-react'
 
 type Plan = 'monthly' | 'annual'
 
@@ -129,6 +129,7 @@ export default function UpgradePage() {
       // payment and would otherwise show success for a cancelled retry.
       let attempts = 0
       const maxAttempts = 40
+      const statusCheckAttempt = 20 // ~60s in — one fallback query to Safaricom if still silent
 
       pollRef.current = setInterval(async () => {
         attempts++
@@ -165,6 +166,17 @@ export default function UpgradePage() {
               setStep('pay')
             }
             return
+          }
+
+          // Still nothing from the callback after ~60s — ask Safaricom
+          // directly, once, in case their callback never arrives at all.
+          // If this resolves it, the next tick's row read above will
+          // pick up the result normally; if not, keep polling as usual.
+          if (attempts === statusCheckAttempt && session?.access_token) {
+            fetch('/api/mpesa-status', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            }).catch(statusError => console.error('Status check failed:', statusError))
           }
 
           if (attempts >= maxAttempts) {
@@ -205,7 +217,7 @@ export default function UpgradePage() {
             <Check size={32} color={accent} />
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 700, color: textPrimary, marginBottom: 8, letterSpacing: '-0.3px' }}>
-            {t('Welcome to OfliX Pro! 🎉', 'Karibu OfliX Pro! 🎉')}
+            {t('Welcome to OfliX Pro!', 'Karibu OfliX Pro!')}
           </h2>
           <p style={{ fontSize: 14, color: textMuted, lineHeight: 1.6 }}>
             {t('Your account has been upgraded. Taking you to your dashboard...', 'Akaunti yako imeboreshwa. Tunakupeleka kwenye dashibodi yako...')}
@@ -384,7 +396,7 @@ export default function UpgradePage() {
         {/* Error state */}
         {step === 'error' && (
           <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 12, padding: 24, textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
+          <div style={{ fontSize: 40, marginBottom: 16 }}><AlertTriangle size={40} color="#FF9F0A" style={{ margin: '0 auto' }} /></div>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: textPrimary, marginBottom: 8 }}>
               {t('Payment confirmation pending', 'Uthibitisho wa malipo unasubiri')}
             </h3>
@@ -398,8 +410,8 @@ export default function UpgradePage() {
           </div>
         )}
 
-        <p style={{ textAlign: 'center', fontSize: 12, color: textMuted, marginTop: 20 }}>
-          🔒 {t('Payments are processed securely via Safaricom M-Pesa.', 'Malipo yanashughulikiwa kwa usalama kupitia Safaricom M-Pesa.')}
+        <p style={{ textAlign: 'center', fontSize: 12, color: textMuted, marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+          <Lock size={12} /> {t('Payments are processed securely via Safaricom M-Pesa.', 'Malipo yanashughulikiwa kwa usalama kupitia Safaricom M-Pesa.')}
         </p>
       </div>
     </div>

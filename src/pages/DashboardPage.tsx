@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Globe, MessageCircle, MapPin, Eye,
-  Moon, Sun, ExternalLink,
+  Moon, Sun, ExternalLink, ArrowUpRight,
   Copy, CheckCheck, Sparkles, BarChart2,
   Settings, Share2, LogOut, Lock, PhoneCall,
   ShoppingBag, UtensilsCrossed, Scissors, Stethoscope,
@@ -326,8 +326,8 @@ export default function DashboardPage() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{t('Your website', 'Tovuti yako')}</div>
                     {subscription.canEdit ? (
-                      <button onClick={() => navigate('/dashboard/website')} style={{ fontSize: 12, color: accent, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                        {t('Edit with AI', 'Hariri na AI')} ↗
+                      <button onClick={() => navigate('/dashboard/website')} style={{ fontSize: 12, color: accent, fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: 3 }}>
+                        {t('Edit with AI', 'Hariri na AI')} <ArrowUpRight size={12} />
                       </button>
                     ) : (
                       <button onClick={() => navigate('/upgrade')} style={{ fontSize: 12, color: '#7C3AED', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: 4 }}>
