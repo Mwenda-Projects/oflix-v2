@@ -27,6 +27,16 @@ export interface Business {
   is_live: boolean
   created_at: string
   updated_at: string
+  generated_html?: string
+  // Structured site content (tagline, offerings, style tokens, etc — see
+  // SiteData in lib/ai.ts). Null/undefined on businesses generated before
+  // this was introduced; those fall back to the slower full-HTML edit path.
+  site_data?: Record<string, any> | null
+  // Set once the free-text "Custom edit" box has been used on this
+  // business. From then on, ALL edits (including Quick Edits) use the
+  // slow full-HTML path, because site_data can no longer be trusted to
+  // represent everything on the live page (e.g. a custom-added section).
+  has_custom_edit?: boolean
 }
 
 export interface Lead {

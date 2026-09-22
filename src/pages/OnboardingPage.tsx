@@ -185,7 +185,7 @@ export default function OnboardingPage() {
       if (err || !biz) throw new Error('Could not save')
 
       setBuildStatus('AI is designing your website...')
-      const html = await generateWebsiteFromAI({
+      const { html, siteData } = await generateWebsiteFromAI({
         id: biz.id,
         name: data.businessName || '',
         category: data.category || 'other',
@@ -199,7 +199,11 @@ export default function OnboardingPage() {
       })
 
       setBuildStatus('Almost done...')
-      await updateBusiness(biz.id, { generated_html: html } as any)
+      // site_data is the structured source of truth that lets future
+      // Quick Edits be fast, small JSON edits instead of full-page
+      // rewrites — see lib/ai.ts. generated_html stays the canonical
+      // rendered output the live site and preview iframe consume.
+      await updateBusiness(biz.id, { generated_html: html, site_data: siteData } as any)
 
       setIsBuilding(false)
       setDone(true)

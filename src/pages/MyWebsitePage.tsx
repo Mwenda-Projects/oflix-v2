@@ -4,7 +4,14 @@ import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getMyBusiness, updateBusiness } from '@/lib/db'
-import { isValidGeneratedHtml } from '@/lib/ai'
+import {
+  isValidGeneratedHtml,
+  editSiteData,
+  renderSiteHtml,
+  extractHeroImageHtml,
+  extractPhotoCreditHtml,
+  type SiteData,
+} from '@/lib/ai'
 import { supabase } from '@/lib/supabase'
 import { compressAndUpload, deleteIfOwnedImage, findImageSlots, replaceImageSlot, type ImageSlot } from '@/lib/imageUpload'
 import type { Business } from '@/lib/db'
@@ -101,9 +108,56 @@ export default function MyWebsitePage() {
     setIsGenerating(true)
     setMessage(null)
 
-    try {
-      const currentHtml = (business as any).generated_html || ''
+    const isQuickEdit = QUICK_EDITS.includes(editPrompt)
+    const siteData = (business as any).site_data as SiteData | undefined
+    const hasCustomEdit = !!(business as any).has_custom_edit
+    const currentHtml = (business as any).generated_html || ''
 
+    // ── FAST PATH ────────────────────────────────────────────────
+    // Only for Quick Edits, only when this business has structured
+    // site_data AND has never used the free-text custom edit box.
+    // Once has_custom_edit is true, site_data can no longer be trusted
+    // to represent everything on the live page (a custom edit may have
+    // added a section site_data has no field for), so every edit falls
+    // back to the slow path from then on, permanently, for safety.
+    const canAttemptFastPath = isQuickEdit && !!siteData && !hasCustomEdit
+    const heroImageHtml = canAttemptFastPath ? extractHeroImageHtml(currentHtml) : null
+
+    try {
+      if (canAttemptFastPath && heroImageHtml) {
+        const updated = await editSiteData(siteData as SiteData, editPrompt)
+
+        if (JSON.stringify(updated) === JSON.stringify(siteData)) {
+          // The model determined this request needs a section or
+          // structure site_data can't represent — point the owner at
+          // the custom edit box instead of silently doing nothing.
+          setMessage(t(
+            'That kind of change needs the custom edit box below.',
+            'Aina hiyo ya mabadiliko inahitaji kisanduku cha mabadiliko maalum hapa chini.'
+          ))
+          setIsGenerating(false)
+          return
+        }
+
+        const photoCreditHtml = extractPhotoCreditHtml(currentHtml)
+        const newHtml = renderSiteHtml(business as any, updated, heroImageHtml, photoCreditHtml)
+
+        await updateBusiness(business.id, { generated_html: newHtml, site_data: updated } as any)
+        setBusiness({ ...business, generated_html: newHtml, site_data: updated } as any)
+        setEditCount(c => c + 1)
+        setMessage(t('Website updated!', 'Tovuti imesasishwa!'))
+        setPrompt('')
+        setTimeout(() => setMessage(null), 3000)
+        setIsGenerating(false)
+        return
+      }
+
+      // ── SLOW PATH ──────────────────────────────────────────────
+      // Full-page AI rewrite — unchanged from before. Used for: custom
+      // free-text edits (always, since they may need structure site_data
+      // can't describe), any business without site_data yet (sites
+      // generated before this change), and any business that has ever
+      // used a custom edit.
       const aiPrompt = `You are a web designer editing an existing business website. Make ONLY the requested change. Keep everything else exactly the same.
 
 CURRENT WEBSITE HTML:
@@ -136,7 +190,7 @@ STRICT RULES:
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 16000,
+          max_tokens: 8000,
           messages: [{ role: 'user', content: aiPrompt }],
         }),
       })
@@ -158,8 +212,16 @@ STRICT RULES:
         return
       }
 
-      await updateBusiness(business.id, { generated_html: clean } as any)
-      setBusiness({ ...business, generated_html: clean } as any)
+      // Only the free-text custom box can mark a business as having a
+      // custom edit — a Quick Edit that fell through to the slow path
+      // (e.g. a legacy business with no site_data yet) hasn't added
+      // anything site_data couldn't describe, so it doesn't need to
+      // permanently disable the fast path.
+      const updates: Record<string, any> = { generated_html: clean }
+      if (!isQuickEdit) updates.has_custom_edit = true
+
+      await updateBusiness(business.id, updates)
+      setBusiness({ ...business, ...updates } as any)
       setEditCount(c => c + 1)
       setMessage(t('Website updated!', 'Tovuti imesasishwa!'))
       setPrompt('')

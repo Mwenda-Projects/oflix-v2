@@ -19,6 +19,56 @@ export function isValidGeneratedHtml(html?: string) {
     normalized.includes('</style>')
 }
 
+// ── Structured site content ─────────────────────────────────────
+// Replaces the old fixed service1..4 fields with a flexible offerings
+// array (any count, optional price per item), and pulls the per-category
+// color/font choices into the same object as `style` so a "make it feel
+// warmer" edit can update five small values instead of triggering a
+// full-page rewrite.
+export interface SiteOffering {
+  name: string
+  description: string
+  price?: string | null
+}
+
+export interface SiteStyle {
+  bg: string
+  accent: string
+  text: string
+  muted: string
+  display_font: string
+}
+
+export interface SiteData {
+  tagline: string
+  hero_title: string
+  hero_subtitle: string
+  about: string
+  offerings: SiteOffering[]
+  cta_text: string
+  style: SiteStyle
+}
+
+// Extracts the exact hero <img> tag from an already-rendered page, so a
+// fast structured edit can preserve it verbatim — including a photo the
+// owner uploaded through the image manager, which must never be
+// silently replaced by a fresh Unsplash search just because the colors
+// changed. Returns null if the tag can't be found, signalling callers
+// to fall back to the slow full-page path instead of guessing.
+export function extractHeroImageHtml(html: string): string | null {
+  const match = html.match(/<img class="hero-img"[^>]*>/)
+  return match ? match[0] : null
+}
+
+// Extracts the exact Unsplash photographer-credit fragment from the
+// footer, if present, so it survives a fast structured edit unchanged.
+// Returns '' (no credit) if the current image has none — e.g. it was
+// replaced with an owner-uploaded photo.
+export function extractPhotoCreditHtml(html: string): string {
+  const match = html.match(/ · Photo by .*?<\/a> on <a[^>]*>Unsplash<\/a>/)
+  return match ? match[0] : ''
+}
+
 // Fallback photos per category — used only if Unsplash search fails
 const CATEGORY_PHOTOS: Record<string, { hero: string; alt: string }> = {
   salon:        { hero: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=80', alt: 'Professional hair salon' },
@@ -50,6 +100,19 @@ const CATEGORY_FONTS: Record<string, { display: string }> = {
   other:        { display: "'Barlow Condensed', sans-serif" },
 }
 
+const CATEGORY_COLORS: Record<string, SiteStyle> = {
+  food:         { bg: '#111008', accent: '#FF6B00', text: '#fff8f0', muted: '#a89070', display_font: CATEGORY_FONTS.food.display },
+  salon:        { bg: '#1a0f14', accent: '#D4A0B5', text: '#fff5f8', muted: '#a07888', display_font: CATEGORY_FONTS.salon.display },
+  clinic:       { bg: '#08111a', accent: '#00AAFF', text: '#f0f8ff', muted: '#607888', display_font: CATEGORY_FONTS.clinic.display },
+  retail:       { bg: '#0d0d1a', accent: '#7C6FFF', text: '#f5f5ff', muted: '#706880', display_font: CATEGORY_FONTS.retail.display },
+  school:       { bg: '#080e1a', accent: '#FFD700', text: '#f5f5ff', muted: '#707888', display_font: CATEGORY_FONTS.school.display },
+  transport:    { bg: '#0a0a0a', accent: '#FF6600', text: '#ffffff', muted: '#808080', display_font: CATEGORY_FONTS.transport.display },
+  construction: { bg: '#111111', accent: '#F5C400', text: '#ffffff', muted: '#888880', display_font: CATEGORY_FONTS.construction.display },
+  agriculture:  { bg: '#0a1208', accent: '#4CAF50', text: '#f5fff0', muted: '#608068', display_font: CATEGORY_FONTS.agriculture.display },
+  tech:         { bg: '#050510', accent: '#00EEFF', text: '#f0ffff', muted: '#507888', display_font: CATEGORY_FONTS.tech.display },
+  other:        { bg: '#0f0f0f', accent: '#00C896', text: '#ffffff', muted: '#608070', display_font: CATEGORY_FONTS.other.display },
+}
+
 // Small inline SVG icon set replacing emoji glyphs. Emoji render
 // inconsistently across OS/browser and read as a template tell — these
 // use stroke="currentColor" so they automatically match whatever text
@@ -67,6 +130,29 @@ interface UnsplashPhoto {
   alt: string
   photographerName?: string
   photographerUrl?: string
+}
+
+interface BusinessInput {
+  id: string
+  name: string
+  category: string
+  description: string
+  phone: string
+  whatsapp?: string
+  address: string
+  building?: string
+  floorUnit?: string
+  hours?: string
+}
+
+function buildHeroImgTag(photo: UnsplashPhoto): string {
+  return `<img class="hero-img" src="${photo.hero}" alt="${photo.alt}" data-img-slot="hero">`
+}
+
+function buildPhotoCreditHtml(photo: UnsplashPhoto): string {
+  return photo.photographerName
+    ? ` · Photo by <a href="${photo.photographerUrl}?utm_source=oflix&utm_medium=referral" target="_blank">${photo.photographerName}</a> on <a href="https://unsplash.com/?utm_source=oflix&utm_medium=referral" target="_blank">Unsplash</a>`
+    : ''
 }
 
 // Fetches the current logged-in user's Supabase access token so /api/generate
@@ -107,186 +193,107 @@ async function fetchUnsplashPhoto(keyword: string, category: string): Promise<Un
   return { hero: fallback.hero, alt: fallback.alt }
 }
 
-export async function generateWebsite(business: {
-  id: string
-  name: string
-  category: string
-  description: string
-  phone: string
-  whatsapp?: string
-  address: string
-  building?: string
-  floorUnit?: string
-  hours?: string
-}): Promise<string> {
-
-  const categoryColors: Record<string, { bg: string; accent: string; text: string; muted: string }> = {
-    food:         { bg: '#111008', accent: '#FF6B00', text: '#fff8f0', muted: '#a89070' },
-    salon:        { bg: '#1a0f14', accent: '#D4A0B5', text: '#fff5f8', muted: '#a07888' },
-    clinic:       { bg: '#08111a', accent: '#00AAFF', text: '#f0f8ff', muted: '#607888' },
-    retail:       { bg: '#0d0d1a', accent: '#7C6FFF', text: '#f5f5ff', muted: '#706880' },
-    school:       { bg: '#080e1a', accent: '#FFD700', text: '#f5f5ff', muted: '#707888' },
-    transport:    { bg: '#0a0a0a', accent: '#FF6600', text: '#ffffff', muted: '#808080' },
-    construction: { bg: '#111111', accent: '#F5C400', text: '#ffffff', muted: '#888880' },
-    agriculture:  { bg: '#0a1208', accent: '#4CAF50', text: '#f5fff0', muted: '#608068' },
-    tech:         { bg: '#050510', accent: '#00EEFF', text: '#f0ffff', muted: '#507888' },
-    other:        { bg: '#0f0f0f', accent: '#00C896', text: '#ffffff', muted: '#608070' },
-  }
-
-  const c = categoryColors[business.category] || categoryColors.other
-  const f = CATEGORY_FONTS[business.category] || CATEGORY_FONTS.other
+// ── Pure renderer: SiteData + business facts + hero image markup → HTML ──
+// No AI calls happen in here. Both initial generation and the fast edit
+// path call this with different SiteData, which is what keeps a schema
+// edit cheap — only the small JSON changes, the same local function turns
+// it into the page.
+export function renderSiteHtml(
+  business: BusinessInput,
+  siteData: SiteData,
+  heroImageHtml: string,
+  photoCreditHtml: string
+): string {
+  const style = siteData.style
   const whatsappNumber = (business.whatsapp || business.phone).replace(/\D/g, '').replace(/^0/, '254')
   const whatsappLink = `https://wa.me/${whatsappNumber}`
 
-  // Display address: building (optional) + area — clean, shown on the page
   const displayAddress = business.building
     ? `${business.building}, ${business.address}`
     : business.address
 
-  // Maps search query: building + area — floor/unit excluded (Maps navigates to buildings, not floors)
   const mapsQueryAddress = business.building
     ? `${business.building}, ${business.address}`
     : business.address
   const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQueryAddress + ', Nairobi, Kenya')}`
 
-  // Business subdomain is now the canonical public URL (businessname.oflix.space),
-  // used in the footer link and the Save Contact vCard. Same slug-generation
-  // logic as before — just a different domain shape.
   const businessSlug = business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
   const websiteUrl = `https://${businessSlug}.oflix.space`
 
-  // Nav logo split: last word gets the accent color, everything before it
-  // stays plain. Handles any word count safely — previously this sliced
-  // to the first two words and dropped the rest for longer names, and
-  // produced an empty accent span for single-word names.
   const nameWords = business.name.trim().split(/\s+/)
   const navLogoMain = nameWords.length > 1 ? nameWords.slice(0, -1).join(' ') : nameWords[0]
   const navLogoAccent = nameWords.length > 1 ? nameWords[nameWords.length - 1] : ''
 
-  // Step 1: Ask Claude for JSON content + an image search keyword
-  const contentPrompt = `You are a copywriter for a Nairobi business website. Return ONLY valid JSON, no markdown, no explanation.
+  const offeringsHtml = siteData.offerings.map(o => `
+      <div class="card">
+        <div class="card-mark"></div>
+        <div class="card-name">${o.name}</div>
+        <div class="card-desc">${o.description}</div>
+        ${o.price ? `<div class="card-price">${o.price}</div>` : ''}
+      </div>`).join('')
 
-Business:
-- Name: ${business.name}
-- Type: ${business.category}
-- Description: ${business.description}
-- Address: ${business.address}
-${business.hours ? `- Hours: ${business.hours}` : ''}
-
-Return this exact JSON structure:
-{
-  "tagline": "A short powerful tagline (max 6 words)",
-  "hero_title": "Big bold headline (max 5 words, all caps style)",
-  "hero_subtitle": "One sentence describing what makes them special",
-  "about": "2-3 sentences about the business, warm and professional",
-  "service1_name": "First service name",
-  "service1_desc": "One sentence description",
-  "service2_name": "Second service name",
-  "service2_desc": "One sentence description",
-  "service3_name": "Third service name",
-  "service3_desc": "One sentence description",
-  "service4_name": "Fourth service name",
-  "service4_desc": "One sentence description",
-  "cta_text": "Call to action button text (max 5 words)",
-  "image_keyword": "A specific 2-4 word English search term for a stock photo that accurately represents THIS business (e.g. 'pharmacy medicine shelves', 'hair salon interior', 'car mechanic garage', 'plumber fixing pipes'). Be precise based on the actual description, not just the category."
-}`
-
-  const authHeader = await getAuthHeader()
-
-  const response = await fetch(PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeader },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: contentPrompt }],
-    }),
-  })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error || 'Generation failed')
-  }
-
-  const data = await response.json()
-  const raw = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
-  if (!raw) throw new Error('No content was generated')
-
-  // Step 2: Parse JSON
-  let content: Record<string, string>
-  try {
-    const cleaned = raw.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim()
-    content = JSON.parse(cleaned)
-  } catch {
-    throw new Error('Failed to parse generated content')
-  }
-
-  // Step 3: Fetch a relevant photo from Unsplash based on the AI's keyword
-  const imageKeyword = content.image_keyword || business.category
-  const photo = await fetchUnsplashPhoto(imageKeyword, business.category)
-
-  // Step 4: Inject into hardcoded HTML template
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${business.name}</title>
-<meta name="description" content="${content.hero_subtitle}">
+<meta name="description" content="${siteData.hero_subtitle}">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Barlow+Condensed:wght@700;800;900&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;background:${c.bg};color:${c.text};overflow-x:hidden;line-height:1.6}
+body{font-family:'Inter',sans-serif;background:${style.bg};color:${style.text};overflow-x:hidden;line-height:1.6}
 a{text-decoration:none;color:inherit}
 img{display:block;max-width:100%}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);border-bottom:2px solid ${c.accent}}
-.logo{font-family:${f.display};font-size:1.3rem;font-weight:800;letter-spacing:1px;color:${c.text}}
-.logo span{color:${c.accent}}
-.nav-btn{background:${c.accent};color:${c.bg};font-weight:700;font-size:0.8rem;padding:8px 16px;border-radius:4px;letter-spacing:0.5px;display:inline-flex;align-items:center;gap:6px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);border-bottom:2px solid ${style.accent}}
+.logo{font-family:${style.display_font};font-size:1.3rem;font-weight:800;letter-spacing:1px;color:${style.text}}
+.logo span{color:${style.accent}}
+.nav-btn{background:${style.accent};color:${style.bg};font-weight:700;font-size:0.8rem;padding:8px 16px;border-radius:4px;letter-spacing:0.5px;display:inline-flex;align-items:center;gap:6px}
 .hero{min-height:100vh;display:flex;align-items:flex-end;padding-bottom:60px;position:relative;overflow:hidden}
 .hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0}
-.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,${c.bg} 0%,rgba(0,0,0,0.55) 60%,rgba(0,0,0,0.2) 100%);z-index:1}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,${style.bg} 0%,rgba(0,0,0,0.55) 60%,rgba(0,0,0,0.2) 100%);z-index:1}
 .hero-body{position:relative;z-index:2;padding:0 24px;max-width:700px;width:100%;margin:0 auto}
-.hero-tag{display:inline-flex;align-items:center;gap:6px;background:${c.accent};color:${c.bg};font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:5px 12px;border-radius:2px;margin-bottom:16px}
-.hero-title{font-family:${f.display};font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:#ffffff}
-.hero-title span{color:${c.accent};display:block}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:${style.accent};color:${style.bg};font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:5px 12px;border-radius:2px;margin-bottom:16px}
+.hero-title{font-family:${style.display_font};font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:#ffffff}
+.hero-title span{color:${style.accent};display:block}
 .hero-sub{font-size:1rem;color:rgba(255,255,255,0.8);max-width:480px;margin-bottom:28px;line-height:1.7}
 .hero-btns{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px}
 .btn-wa{background:#25D366;color:#fff;font-weight:700;font-size:0.9rem;padding:13px 24px;border-radius:4px;display:inline-flex;align-items:center;gap:8px}
-.btn-call{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid ${c.accent};display:inline-flex;align-items:center;gap:8px}
+.btn-call{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid ${style.accent};display:inline-flex;align-items:center;gap:8px}
 .btn-directions{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.4);display:inline-flex;align-items:center;gap:8px}
 .btn-wa:hover,.btn-call:hover,.btn-directions:hover{opacity:0.88}
 .services{padding:70px 24px;background:rgba(255,255,255,0.03)}
 .about-sec{padding:70px 24px}
 .cta-section{padding:60px 24px;text-align:center;background:rgba(255,255,255,0.03)}
-footer{padding:24px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);font-size:0.8rem;color:${c.muted}}
-footer a{color:${c.accent}}
-.sec-label{font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${c.accent};margin-bottom:10px}
-.sec-title{font-family:${f.display};font-size:clamp(2rem,7vw,2.8rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:32px;line-height:1}
-.sec-title span{color:${c.accent}}
+footer{padding:24px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);font-size:0.8rem;color:${style.muted}}
+footer a{color:${style.accent}}
+.sec-label{font-size:0.65rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${style.accent};margin-bottom:10px}
+.sec-title{font-family:${style.display_font};font-size:clamp(2rem,7vw,2.8rem);font-weight:900;text-transform:uppercase;color:${style.text};margin-bottom:32px;line-height:1}
+.sec-title span{color:${style.accent}}
 .section-inner{max-width:1100px;width:100%;margin:0 auto}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.hero-btns{flex-direction:column}}
 @media(min-width:900px){.grid{grid-template-columns:repeat(4,1fr);gap:20px}}
 @media(min-width:1024px){.hero-body{max-width:900px}.about-inner{max-width:800px}}
 .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:20px;transition:border-color 0.2s}
-.card:hover{border-color:${c.accent}}
-.card-mark{width:28px;height:3px;background:${c.accent};border-radius:2px;margin-bottom:14px}
-.card-name{font-weight:700;font-size:1rem;color:${c.text};margin-bottom:6px}
-.card-desc{font-size:0.85rem;color:${c.muted};line-height:1.6}
+.card:hover{border-color:${style.accent}}
+.card-mark{width:28px;height:3px;background:${style.accent};border-radius:2px;margin-bottom:14px}
+.card-name{font-weight:700;font-size:1rem;color:${style.text};margin-bottom:6px}
+.card-desc{font-size:0.85rem;color:${style.muted};line-height:1.6}
+.card-price{font-size:0.8rem;font-weight:700;color:${style.accent};margin-top:8px}
 .about-inner{max-width:700px;width:100%;margin:0 auto}
-.about-text{font-size:0.95rem;color:${c.muted};line-height:1.9;margin-bottom:24px}
-.detail-row{display:flex;align-items:flex-start;gap:12px;font-size:0.9rem;color:${c.muted};margin-bottom:12px}
-.detail-icon{width:36px;height:36px;background:${c.accent};border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${c.bg}}
-.detail-row strong{display:block;color:${c.text};font-size:0.8rem;margin-bottom:2px}
+.about-text{font-size:0.95rem;color:${style.muted};line-height:1.9;margin-bottom:24px}
+.detail-row{display:flex;align-items:flex-start;gap:12px;font-size:0.9rem;color:${style.muted};margin-bottom:12px}
+.detail-icon{width:36px;height:36px;background:${style.accent};border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${style.bg}}
+.detail-row strong{display:block;color:${style.text};font-size:0.8rem;margin-bottom:2px}
 .contact-btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
 .btn-contact{display:inline-flex;align-items:center;gap:8px;padding:13px 20px;border-radius:4px;font-weight:700;font-size:0.9rem;cursor:pointer;border:none}
-.btn-save{background:${c.accent};color:${c.bg}}
-.btn-map{background:rgba(255,255,255,0.08);color:${c.text};border:1.5px solid rgba(255,255,255,0.2)!important}
+.btn-save{background:${style.accent};color:${style.bg}}
+.btn-map{background:rgba(255,255,255,0.08);color:${style.text};border:1.5px solid rgba(255,255,255,0.2)!important}
 .cta-inner{max-width:700px;width:100%;margin:0 auto}
-.cta-title{font-family:${f.display};font-size:clamp(1.8rem,6vw,2.5rem);font-weight:900;text-transform:uppercase;color:${c.text};margin-bottom:8px}
-.cta-sub{color:${c.muted};font-size:0.9rem;margin-bottom:28px}
+.cta-title{font-family:${style.display_font};font-size:clamp(1.8rem,6vw,2.5rem);font-weight:900;text-transform:uppercase;color:${style.text};margin-bottom:8px}
+.cta-sub{color:${style.muted};font-size:0.9rem;margin-bottom:28px}
 .cta-btns{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
 </style>
 </head>
@@ -298,15 +305,15 @@ footer a{color:${c.accent}}
 </nav>
 
 <section class="hero">
-  <img class="hero-img" src="${photo.hero}" alt="${photo.alt}" data-img-slot="hero">
+  ${heroImageHtml}
   <div class="hero-overlay"></div>
   <div class="hero-body">
     <div class="hero-tag">${ICON.pin} ${displayAddress}</div>
     <h1 class="hero-title">
-      ${content.hero_title.split(' ').slice(0, 3).join(' ')}
-      <span>${content.hero_title.split(' ').slice(3).join(' ')}</span>
+      ${siteData.hero_title.split(' ').slice(0, 3).join(' ')}
+      <span>${siteData.hero_title.split(' ').slice(3).join(' ')}</span>
     </h1>
-    <p class="hero-sub">${content.hero_subtitle}</p>
+    <p class="hero-sub">${siteData.hero_subtitle}</p>
     <div class="hero-btns">
       <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">${ICON.chat} WhatsApp Us</a>
       <a href="tel:${business.phone}" class="btn-call">${ICON.phone} ${business.phone}</a>
@@ -319,27 +326,7 @@ footer a{color:${c.accent}}
   <div class="section-inner">
     <div class="sec-label">What We Offer</div>
     <h2 class="sec-title">Our <span>Services</span></h2>
-    <div class="grid">
-      <div class="card">
-        <div class="card-mark"></div>
-        <div class="card-name">${content.service1_name}</div>
-        <div class="card-desc">${content.service1_desc}</div>
-      </div>
-      <div class="card">
-        <div class="card-mark"></div>
-        <div class="card-name">${content.service2_name}</div>
-        <div class="card-desc">${content.service2_desc}</div>
-      </div>
-      <div class="card">
-        <div class="card-mark"></div>
-        <div class="card-name">${content.service3_name}</div>
-        <div class="card-desc">${content.service3_desc}</div>
-      </div>
-      <div class="card">
-        <div class="card-mark"></div>
-        <div class="card-name">${content.service4_name}</div>
-        <div class="card-desc">${content.service4_desc}</div>
-      </div>
+    <div class="grid">${offeringsHtml}
     </div>
   </div>
 </section>
@@ -348,7 +335,7 @@ footer a{color:${c.accent}}
   <div class="about-inner">
     <div class="sec-label">About Us</div>
     <h2 class="sec-title">Who <span>We Are</span></h2>
-    <p class="about-text">${content.about}</p>
+    <p class="about-text">${siteData.about}</p>
     <div class="detail-row">
       <div class="detail-icon">${ICON.pin}</div>
       <div><strong>Location</strong>${displayAddress}${business.floorUnit ? `<br><span style="opacity:0.75;font-size:0.85em">${business.floorUnit}</span>` : ''}</div>
@@ -371,10 +358,10 @@ footer a{color:${c.accent}}
 
 <section class="cta-section" id="contact">
   <div class="cta-inner">
-    <h2 class="cta-title">Ready to <span style="color:${c.accent}">Get Started?</span></h2>
-    <p class="cta-sub">${content.tagline}</p>
+    <h2 class="cta-title">Ready to <span style="color:${style.accent}">Get Started?</span></h2>
+    <p class="cta-sub">${siteData.tagline}</p>
     <div class="cta-btns">
-      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">${ICON.chat} ${content.cta_text}</a>
+      <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">${ICON.chat} ${siteData.cta_text}</a>
       <a href="tel:${business.phone}" class="btn-call">${ICON.phone} Call ${business.phone}</a>
     </div>
   </div>
@@ -382,7 +369,7 @@ footer a{color:${c.accent}}
 
 <footer>
   <p>© ${new Date().getFullYear()} ${business.name} · ${displayAddress}</p>
-  <p style="margin-top:8px">Powered by <a href="https://oflix.space" target="_blank">OfliX</a>${photo.photographerName ? ` · Photo by <a href="${photo.photographerUrl}?utm_source=oflix&utm_medium=referral" target="_blank">${photo.photographerName}</a> on <a href="https://unsplash.com/?utm_source=oflix&utm_medium=referral" target="_blank">Unsplash</a>` : ''}</p>
+  <p style="margin-top:8px">Powered by <a href="https://oflix.space" target="_blank">OfliX</a>${photoCreditHtml}</p>
 </footer>
 
 <script>
@@ -428,6 +415,149 @@ function saveContact() {
 
 </body>
 </html>`
+}
 
-  return html
+// ── Initial generation: AI writes SiteData, we render it locally ────
+export async function generateWebsite(business: BusinessInput): Promise<{ html: string; siteData: SiteData }> {
+  const style = CATEGORY_COLORS[business.category] || CATEGORY_COLORS.other
+
+  const contentPrompt = `You are a copywriter for a Nairobi business website. Return ONLY valid JSON, no markdown, no explanation.
+
+Business:
+- Name: ${business.name}
+- Type: ${business.category}
+- Description: ${business.description}
+- Address: ${business.address}
+${business.hours ? `- Hours: ${business.hours}` : ''}
+
+Return this exact JSON structure:
+{
+  "tagline": "A short powerful tagline (max 6 words)",
+  "hero_title": "Big bold headline (max 5 words, all caps style)",
+  "hero_subtitle": "One sentence describing what makes them special",
+  "about": "2-3 sentences about the business, warm and professional",
+  "offerings": [
+    { "name": "Offering name", "description": "One sentence description", "price": "KES amount, per unit, or null if not applicable" }
+  ],
+  "cta_text": "Call to action button text (max 5 words)",
+  "image_keyword": "A specific 2-4 word English search term for a stock photo that accurately represents THIS business (e.g. 'pharmacy medicine shelves', 'hair salon interior', 'car mechanic garage', 'plumber fixing pipes'). Be precise based on the actual description, not just the category."
+}
+
+Return between 3 and 5 offerings. Only include a "price" when the business would naturally display one (e.g. a price list, a menu, per-kg or per-session rates) — otherwise set it to null.`
+
+  const authHeader = await getAuthHeader()
+
+  const response = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: contentPrompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || 'Generation failed')
+  }
+
+  const data = await response.json()
+  const raw = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
+  if (!raw) throw new Error('No content was generated')
+
+  let content: Record<string, any>
+  try {
+    const cleaned = raw.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim()
+    content = JSON.parse(cleaned)
+  } catch {
+    throw new Error('Failed to parse generated content')
+  }
+
+  const imageKeyword = content.image_keyword || business.category
+  const photo = await fetchUnsplashPhoto(imageKeyword, business.category)
+
+  const siteData: SiteData = {
+    tagline: content.tagline,
+    hero_title: content.hero_title,
+    hero_subtitle: content.hero_subtitle,
+    about: content.about,
+    offerings: (Array.isArray(content.offerings) ? content.offerings : []).slice(0, 6),
+    cta_text: content.cta_text,
+    style,
+  }
+
+  const html = renderSiteHtml(
+    business,
+    siteData,
+    buildHeroImgTag(photo),
+    buildPhotoCreditHtml(photo)
+  )
+
+  return { html, siteData }
+}
+
+// ── Fast edit path: small JSON in, small JSON out, rendered locally ──
+// Used only for edits that can be fully described within SiteData
+// (content and style/theme changes). Anything that would require adding
+// a section SiteData has no field for (a gallery, a reordering of
+// sections) is asked to return the input unchanged, which callers treat
+// as "this needs the full custom-edit path instead."
+export async function editSiteData(siteData: SiteData, editPrompt: string): Promise<SiteData> {
+  const prompt = `You are editing structured content data for a Nairobi business website. Return ONLY valid JSON, no markdown, no explanation.
+
+CURRENT DATA:
+${JSON.stringify(siteData, null, 2)}
+
+REQUESTED CHANGE: "${editPrompt}"
+
+Apply ONLY the requested change. Keep everything else exactly the same. Return the complete data using this exact structure:
+{
+  "tagline": "...",
+  "hero_title": "...",
+  "hero_subtitle": "...",
+  "about": "...",
+  "offerings": [{ "name": "...", "description": "...", "price": "... or null" }],
+  "cta_text": "...",
+  "style": { "bg": "#hexcolor", "accent": "#hexcolor", "text": "#hexcolor", "muted": "#hexcolor", "display_font": "'FontName', serif" }
+}
+
+If the request cannot be satisfied by only changing these fields — for example it asks to add a new section like a photo gallery, or reorder the page — return the CURRENT DATA completely unchanged.`
+
+  const authHeader = await getAuthHeader()
+
+  const response = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || 'Edit failed')
+  }
+
+  const data = await response.json()
+  const raw = data.content?.find((b: { type: string }) => b.type === 'text')?.text || ''
+  if (!raw) throw new Error('No content was generated')
+
+  const cleaned = raw.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim()
+  let updated: SiteData
+  try {
+    updated = JSON.parse(cleaned)
+  } catch {
+    throw new Error('Failed to parse edited content')
+  }
+
+  // Shape guard — never let a malformed response corrupt the site.
+  if (!updated || !Array.isArray(updated.offerings) || !updated.style) {
+    throw new Error('Edit returned an unexpected shape')
+  }
+  updated.offerings = updated.offerings.slice(0, 8)
+
+  return updated
 }
