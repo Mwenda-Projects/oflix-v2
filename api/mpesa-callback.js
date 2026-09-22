@@ -116,7 +116,12 @@ async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNum
     return
   }
 
-  const formattedExpiry = expiresAt.toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })
+  // timeZone is required here — without it this renders in whatever
+  // timezone the Vercel function happens to run in (UTC), which can
+  // show the wrong calendar day for a payment made close to midnight
+  // Nairobi time even though the stored timestamp itself is correct.
+  const dateOpts = { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Africa/Nairobi' }
+  const formattedExpiry = expiresAt.toLocaleDateString('en-KE', dateOpts)
   const planLabel = PLAN_LABEL[billingCycle] || 'Pro'
 
   const pdfBuffer = await generateReceiptPdf({
@@ -125,7 +130,7 @@ async function sendReceiptEmail({ toEmail, billingCycle, amount, mpesaReceiptNum
     amount,
     phoneNumber,
     expiresAt: formattedExpiry,
-    purchasedAt: new Date().toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' }),
+    purchasedAt: new Date().toLocaleDateString('en-KE', dateOpts),
   })
 
   try {
@@ -238,11 +243,19 @@ export default async function handler(req, res) {
           previous_plan:        null,
           previous_billing_cycle: null,
           previous_expires_at:  null,
+          // Recorded even though plan may end up unchanged (e.g. an
+          // existing Pro user's renewal gets cancelled and is restored
+          // to 'pro') — this is what lets the frontend tell "this
+          // attempt failed" apart from "this attempt succeeded" when
+          // the before/after plan looks the same either way.
+          last_result_code:     ResultCode,
+          last_result_desc:     ResultDesc,
           updated_at:           new Date().toISOString(),
         })
         .eq('checkout_request_id', CheckoutRequestID)
+        .eq('plan', 'pending')
 
-      console.log('Payment failed — restored previous state:', { CheckoutRequestID, ResultDesc, restoredPlan: pendingRow?.previous_plan ?? 'free' })
+      console.log('Payment failed — restored previous state:', { CheckoutRequestID, ResultCode, ResultDesc, restoredPlan: pendingRow?.previous_plan ?? 'free' })
       return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' })
     }
 
@@ -311,9 +324,16 @@ export default async function handler(req, res) {
         previous_plan:          null,
         previous_billing_cycle: null,
         previous_expires_at:    null,
+        last_result_code:       0,
+        last_result_desc:       ResultDesc || 'Success',
         updated_at:             new Date().toISOString(),
       })
       .eq('checkout_request_id', CheckoutRequestID)
+      // Only act on a row still 'pending' for this attempt — guards
+      // against a duplicate Safaricom callback delivery re-applying
+      // the same upgrade twice or, worse, landing after a newer push
+      // has already overwritten this row for a different attempt.
+      .eq('plan', 'pending')
 
     if (upgradeError) {
       console.error('Failed to upgrade subscription:', upgradeError)

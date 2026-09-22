@@ -170,6 +170,8 @@ export default async function handler(req, res) {
     // whether to activate monthly or annual once payment is confirmed.
     // previous_* fields let a FAILED payment restore exactly what the
     // user had before, instead of wiping an active Pro subscriber to free.
+    // last_result_code/desc are cleared here so the frontend never reads
+    // a stale result from a PREVIOUS attempt while this new one is pending.
     await supabase.from('subscriptions').upsert({
       user_id:                userId,
       plan:                   'pending',
@@ -179,6 +181,8 @@ export default async function handler(req, res) {
       previous_plan:          snapshotPlan,
       previous_billing_cycle: snapshotBillingCycle,
       previous_expires_at:    snapshotExpiresAt,
+      last_result_code:       null,
+      last_result_desc:       null,
       updated_at:             new Date().toISOString(),
     }, { onConflict: 'user_id' })
 

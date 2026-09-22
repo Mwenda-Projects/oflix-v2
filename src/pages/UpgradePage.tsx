@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
@@ -36,6 +36,15 @@ const PLANS = {
   },
 }
 
+// Maps Safaricom's STK result codes to a message people will actually
+// understand. Anything not listed here falls back to a generic message.
+const FAILURE_MESSAGES: Record<string, { en: string; sw: string }> = {
+  '1032': { en: 'Payment was cancelled.', sw: 'Malipo yamesitishwa.' },
+  '1037': { en: 'The prompt timed out before you responded.', sw: 'Muda wa ombi umeisha kabla haujajibu.' },
+  '2001': { en: 'Incorrect M-Pesa PIN was entered.', sw: 'PIN isiyo sahihi ya M-Pesa iliwekwa.' },
+  '1':    { en: 'Insufficient M-Pesa balance.', sw: 'Salio la M-Pesa halitoshi.' },
+}
+
 export default function UpgradePage() {
   const { isDark } = useTheme()
   const { t } = useLanguage()
@@ -47,12 +56,30 @@ export default function UpgradePage() {
   const [step, setStep] = useState<'choose' | 'pay' | 'waiting' | 'success' | 'error'>('choose')
   const [errorMsg, setErrorMsg] = useState('')
 
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const checkoutIdRef = useRef<string | null>(null)
+
   const bg = isDark ? '#0F1011' : '#F6F6F7'
   const surface = isDark ? '#1C1C1E' : '#FFFFFF'
   const border = isDark ? '#2A2A2A' : '#E5E5E5'
   const textPrimary = isDark ? '#F5F5F7' : '#1A1A1A'
   const textMuted = isDark ? '#666' : '#6D7175'
   const accent = '#008060'
+
+  // Stop polling on unmount so a background timer never fires setState
+  // against an unmounted component or keeps hitting Supabase forever.
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }
 
   const handlePay = async () => {
     const cleanPhone = phone.trim()
@@ -94,36 +121,62 @@ export default function UpgradePage() {
         return
       }
 
-      // Poll Supabase every 3 seconds for up to 2 minutes
+      checkoutIdRef.current = data.checkoutRequestId ?? null
+
+      // Poll Supabase every 3 seconds for up to 2 minutes, checking the
+      // actual result of THIS attempt — not just whether the account is
+      // currently 'pro', which can already be true from an earlier
+      // payment and would otherwise show success for a cancelled retry.
       let attempts = 0
       const maxAttempts = 40
 
-      const poll = setInterval(async () => {
+      pollRef.current = setInterval(async () => {
         attempts++
         try {
-          const { data: sub } = await supabase
+          const { data: sub, error } = await supabase
             .from('subscriptions')
-            .select('plan')
+            .select('plan, checkout_request_id, last_result_code, last_result_desc')
             .eq('user_id', user.id)
             .single()
 
-          if (sub?.plan === 'pro') {
-            clearInterval(poll)
-            setStep('success')
-            setTimeout(() => navigate('/dashboard'), 3000)
+          if (error) {
+            console.error('Poll error:', error)
+          } else if (
+            sub?.checkout_request_id === checkoutIdRef.current &&
+            sub?.last_result_code !== null &&
+            sub?.last_result_code !== undefined
+          ) {
+            stopPolling()
+
+            if (sub.last_result_code === 0) {
+              setStep('success')
+              setTimeout(() => navigate('/dashboard'), 3000)
+            } else {
+              const code = String(sub.last_result_code)
+              const failure = FAILURE_MESSAGES[code]
+              setErrorMsg(
+                failure
+                  ? t(failure.en, failure.sw)
+                  : t(
+                      sub.last_result_desc || 'Payment was not completed.',
+                      sub.last_result_desc || 'Malipo hayakukamilika.'
+                    )
+              )
+              setStep('pay')
+            }
             return
           }
 
           if (attempts >= maxAttempts) {
-            clearInterval(poll)
+            stopPolling()
             setErrorMsg(t(
               'Payment may have been received but we could not confirm. Please contact support.',
               'Malipo yanaweza kuwa yamepokelewa lakini hatukuweza kuthibitisha. Tafadhali wasiliana na msaada.'
             ))
             setStep('error')
           }
-        } catch {
-          // keep polling silently
+        } catch (pollException) {
+          console.error('Poll exception:', pollException)
         }
       }, 3000)
 
@@ -131,6 +184,16 @@ export default function UpgradePage() {
       setErrorMsg(t('Something went wrong. Please try again.', 'Hitilafu fulani imetokea. Jaribu tena.'))
       setStep('pay')
     }
+  }
+
+  const handleBackFromWaiting = () => {
+    // Only stops the UI from watching this attempt — it does not (and
+    // cannot) cancel the actual M-Pesa prompt already on the phone. If
+    // the user completes it after backing out, the callback still
+    // updates the row; they just won't see the live confirmation here.
+    stopPolling()
+    setErrorMsg('')
+    setStep('pay')
   }
 
   // ── Success screen ────────────────────────────────────────────
@@ -172,9 +235,15 @@ export default function UpgradePage() {
           <p style={{ fontSize: 13, color: accent, fontWeight: 500 }}>
             KES {PLANS[selectedPlan].price}/{PLANS[selectedPlan].period} → OfliX {PLANS[selectedPlan].name}
           </p>
-          <p style={{ fontSize: 12, color: textMuted, marginTop: 24 }}>
+          <p style={{ fontSize: 12, color: textMuted, marginTop: 24, marginBottom: 20 }}>
             {t('Waiting for payment confirmation...', 'Tunasubiri uthibitisho wa malipo...')}
           </p>
+          <button
+            onClick={handleBackFromWaiting}
+            style={{ background: 'none', border: 'none', color: textMuted, fontSize: 12, textDecoration: 'underline', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {t('Cancel and go back', 'Ghairi na urudi')}
+          </button>
         </div>
         <style>{`@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}`}</style>
       </div>
