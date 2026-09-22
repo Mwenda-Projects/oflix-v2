@@ -252,14 +252,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;ali
 .hero-title{font-family:${f.display};font-size:clamp(2.8rem,11vw,5.5rem);font-weight:900;line-height:0.95;text-transform:uppercase;margin-bottom:12px;color:#ffffff}
 .hero-title span{color:${c.accent};display:block}
 .hero-sub{font-size:1rem;color:rgba(255,255,255,0.8);max-width:480px;margin-bottom:28px;line-height:1.7}
-.hero-btns{display:flex;flex-wrap:wrap;gap:12px}
+.hero-btns{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px}
 .btn-wa{background:#25D366;color:#fff;font-weight:700;font-size:0.9rem;padding:13px 24px;border-radius:4px;display:inline-flex;align-items:center;gap:8px}
 .btn-call{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid ${c.accent};display:inline-flex;align-items:center;gap:8px}
 .btn-directions{background:transparent;color:#ffffff;font-weight:600;font-size:0.9rem;padding:12px 24px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.4);display:inline-flex;align-items:center;gap:8px}
 .btn-wa:hover,.btn-call:hover,.btn-directions:hover{opacity:0.88}
-.hero-stats{display:flex;gap:28px;margin-top:40px;padding-top:28px;border-top:1px solid rgba(255,255,255,0.2)}
-.stat-num{font-family:${f.display};font-size:2rem;font-weight:900;color:${c.accent};line-height:1}
-.stat-lbl{font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 .services{padding:70px 24px;background:rgba(255,255,255,0.03)}
 .about-sec{padding:70px 24px}
 .cta-section{padding:60px 24px;text-align:center;background:rgba(255,255,255,0.03)}
@@ -270,7 +267,7 @@ footer a{color:${c.accent}}
 .sec-title span{color:${c.accent}}
 .section-inner{max-width:1100px;width:100%;margin:0 auto}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
-@media(max-width:480px){.grid{grid-template-columns:1fr}.hero-stats{gap:16px}.hero-btns{flex-direction:column}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.hero-btns{flex-direction:column}}
 @media(min-width:900px){.grid{grid-template-columns:repeat(4,1fr);gap:20px}}
 @media(min-width:1024px){.hero-body{max-width:900px}.about-inner{max-width:800px}}
 .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:20px;transition:border-color 0.2s}
@@ -314,11 +311,6 @@ footer a{color:${c.accent}}
       <a href="${whatsappLink}" target="_blank" class="btn-wa" onclick="trackWA()">${ICON.chat} WhatsApp Us</a>
       <a href="tel:${business.phone}" class="btn-call">${ICON.phone} ${business.phone}</a>
       <a href="${mapsLink}" target="_blank" class="btn-directions" onclick="trackDir()">${ICON.pin} Get Directions</a>
-    </div>
-    <div class="hero-stats">
-      <div><div class="stat-num">5★</div><div class="stat-lbl">Rating</div></div>
-      <div><div class="stat-num">100+</div><div class="stat-lbl">Clients</div></div>
-      <div><div class="stat-num">NBO</div><div class="stat-lbl">Based</div></div>
     </div>
   </div>
 </section>
